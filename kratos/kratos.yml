@@ -1,0 +1,123 @@
+version: v1.0.0
+
+dsn: postgres://kratos:kratos@kratos-db:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
+
+serve:
+  public:
+    base_url: http://localhost:4433
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000
+        - http://localhost:8080
+      allowed_methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Cookie
+        - Content-Type
+      exposed_headers:
+        - Set-Cookie
+      allow_credentials: true
+  admin:
+    base_url: http://localhost:4434
+
+selfservice:
+  default_browser_return_url: http://localhost:3000
+  allowed_return_urls:
+    - http://localhost:3000
+    - http://localhost:8080
+
+  methods:
+    password:
+      enabled: true
+    link:
+      enabled: true
+    totp:
+      enabled: true
+    lookup_secret:
+      enabled: true
+    webauthn:
+      enabled: true
+
+  flows:
+    error:
+      ui_url: http://localhost:3000/auth/error
+
+    settings:
+      ui_url: http://localhost:3000/auth/settings
+      privileged_session_max_age: 15m
+      required_aal: aal1
+
+    recovery:
+      enabled: true
+      ui_url: http://localhost:3000/auth/recovery
+      after:
+        default_browser_return_url: http://localhost:3000
+
+    verification:
+      enabled: true
+      ui_url: http://localhost:3000/auth/verification
+      after:
+        default_browser_return_url: http://localhost:3000
+
+    logout:
+      after:
+        default_browser_return_url: http://localhost:3000
+
+    login:
+      ui_url: http://localhost:3000/auth/login
+      lifespan: 10m
+
+    registration:
+      lifespan: 10m
+      ui_url: http://localhost:3000/auth/register
+      after:
+        password:
+          hooks:
+            - hook: web_hook
+              config:
+                url: http://audora-api:8080/api/internal/hooks/after-registration
+                method: POST
+                body: file:///etc/config/kratos/after-registration.jsonnet
+                response_ignore: true
+                timeout: 5s
+
+secrets:
+  cookie:
+    - PLEASE-CHANGE-ME-I-AM-VERY-INSECURE
+  cipher:
+    - 32-LONG-SECRET-AT-LEAST-32-BYTES-LONG
+
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+hashers:
+  argon2:
+    parallelism: 1
+    memory: 128MB
+    iterations: 2
+    salt_length: 16
+    key_length: 16
+
+log:
+  level: debug
+  format: text
+  leak_sensitive_values: true
+
+secrets:
+  cookie:
+    - PLEASE-CHANGE-ME-I-AM-VERY-INSECURE
+  cipher:
+    - 32-LONG-SECRET-AT-LEAST-32-BYTES-LONG
+
+dev:
+  disable_csrf: true
+  browser_security_mode: insecure_dev_mode_without_2fa 
