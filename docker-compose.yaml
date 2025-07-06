@@ -1,19 +1,156 @@
+version: '3.8'
+
 services:
-  postgres:
-    image: postgres
+  # Main application database for Audora
+  audora-db:
+    image: postgres:15-alpine
+    container_name: audora-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: aura
+      POSTGRES_USER: ${AUDORA_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${AUDORA_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${AUDORA_DB_NAME:-audora}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - audora_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${AUDORA_DB_USER:-postgres}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - audora-network
+
+  # Kratos identity service database
+  kratos-db:
+    image: postgres:15-alpine
+    container_name: kratos-postgres
+    environment:
+      POSTGRES_USER: ${KRATOS_DB_USER:-kratos}
+      POSTGRES_PASSWORD: ${KRATOS_DB_PASSWORD:-kratos}
+      POSTGRES_DB: ${KRATOS_DB_NAME:-kratos}
+    ports:
+      - "5433:5432"
+    volumes:
+      - kratos_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KRATOS_DB_USER:-kratos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - audora-network
+
+  # MinIO object storage
+  minio:
+    image: minio/minio:latest
+    container_name: audora-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+      - ./scripts/setup-minio.sh:/setup-minio.sh
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - audora-network
+
+  # MinIO setup service
+  minio-setup:
+    image: minio/mc:latest
+    container_name: minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - ./scripts/setup-minio.sh:/setup-minio.sh
+    command: sh /setup-minio.sh
+    networks:
+      - audora-network
+
+  # Ory Kratos identity service
+  kratos:
+    image: oryd/kratos:latest
+    container_name: audora-kratos
+    depends_on:
+      kratos-db:
+        condition: service_healthy
+    environment:
+      DSN: postgres://${KRATOS_DB_USER:-kratos}:${KRATOS_DB_PASSWORD:-kratos}@kratos-db:5432/${KRATOS_DB_NAME:-kratos}?sslmode=disable&max_conns=20&max_idle_conns=4
+      SERVE_PUBLIC_BASE_URL: ${KRATOS_PUBLIC_URL:-http://localhost:4433}
+      SERVE_ADMIN_BASE_URL: ${KRATOS_ADMIN_URL:-http://localhost:4434}
+      SELFSERVICE_DEFAULT_BROWSER_RETURN_URL: ${AUDORA_APP_URL:-http://localhost:3000}
+      SELFSERVICE_FLOWS_ERROR_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/error
+      SELFSERVICE_FLOWS_SETTINGS_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/settings
+      SELFSERVICE_FLOWS_VERIFICATION_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/verification
+      SELFSERVICE_FLOWS_RECOVERY_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/recovery
+      SELFSERVICE_FLOWS_LOGIN_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/login
+      SELFSERVICE_FLOWS_REGISTRATION_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/register
+      SELFSERVICE_FLOWS_LOGOUT_REDIRECT_URL: ${AUDORA_APP_URL:-http://localhost:3000}
+      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: ${AUDORA_API_URL:-http://localhost:8080}/api/internal/hooks/after-registration
+      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_MODE: http
+    ports:
+      - "4433:4433"
+      - "4434:4434"
+    volumes:
+      - ./kratos:/etc/config/kratos
+    command: serve --config /etc/config/kratos/kratos.yml --dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4433/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - audora-network
+
+  # Go backend application
+  audora-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audora-api
+    depends_on:
+      audora-db:
+        condition: service_healthy
+      kratos:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      - AUDORA_DB_HOST=audora-db
+      - AUDORA_DB_PORT=5432
+      - AUDORA_DB_USER=${AUDORA_DB_USER:-postgres}
+      - AUDORA_DB_PASSWORD=${AUDORA_DB_PASSWORD:-postgres}
+      - AUDORA_DB_NAME=${AUDORA_DB_NAME:-audora}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BUCKET_NAME=audora
+      - KRATOS_PUBLIC_URL=${KRATOS_PUBLIC_URL:-http://localhost:4433}
+      - KRATOS_ADMIN_URL=${KRATOS_ADMIN_URL:-http://localhost:4434}
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    networks:
+      - audora-network
 
 volumes:
-  postgres_data:
+  audora_data:
+  kratos_data:
+  minio_data:
+
+networks:
+  audora-network:
+    driver: bridge
