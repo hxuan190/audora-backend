@@ -79,7 +79,7 @@ services:
     networks:
       - audora-network
 
-  # Ory Kratos identity service
+  # Ory Kratos identity service (Enhanced but simple)
   kratos:
     image: oryd/kratos:latest
     container_name: audora-kratos
@@ -87,10 +87,13 @@ services:
       kratos-db:
         condition: service_healthy
     environment:
-      DSN: postgres://${KRATOS_DB_USER:-kratos}:${KRATOS_DB_PASSWORD:-kratos}@kratos-db:5432/${KRATOS_DB_NAME:-kratos}?sslmode=disable&max_conns=20&max_idle_conns=4
+      # Database
+      DSN: postgres://${KRATOS_DB_USER:-kratos}:${KRATOS_DB_PASSWORD:-kratos}@kratos-db:5432/${KRATOS_DB_NAME:-kratos}?sslmode=disable&max_conns=50&max_idle_conns=10
+      
+      # URLs
       SERVE_PUBLIC_BASE_URL: ${KRATOS_PUBLIC_URL:-http://localhost:4433}
       SERVE_ADMIN_BASE_URL: ${KRATOS_ADMIN_URL:-http://localhost:4434}
-      SELFSERVICE_DEFAULT_BROWSER_RETURN_URL: ${AUDORA_APP_URL:-http://localhost:3000}
+      SELFSERVICE_DEFAULT_BROWSER_RETURN_URL: ${AUDORA_APP_URL:-http://localhost:3000}/dashboard
       SELFSERVICE_FLOWS_ERROR_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/error
       SELFSERVICE_FLOWS_SETTINGS_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/settings
       SELFSERVICE_FLOWS_VERIFICATION_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/verification
@@ -98,8 +101,26 @@ services:
       SELFSERVICE_FLOWS_LOGIN_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/login
       SELFSERVICE_FLOWS_REGISTRATION_UI_URL: ${AUDORA_APP_URL:-http://localhost:3000}/auth/register
       SELFSERVICE_FLOWS_LOGOUT_REDIRECT_URL: ${AUDORA_APP_URL:-http://localhost:3000}
-      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: ${AUDORA_API_URL:-http://localhost:8080}/api/internal/hooks/after-registration
-      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_MODE: http
+      
+      # Webhooks
+      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: http://audora-api:8080/api/internal/hooks/after-registration
+      
+      # Secrets (Change these!)
+      SECRETS_COOKIE: ${KRATOS_SECRET_COOKIE:-PLEASE-CHANGE-ME-I-AM-VERY-INSECURE}
+      SECRETS_CIPHER: ${KRATOS_SECRET_CIPHER:-32-LONG-SECRET-AT-LEAST-32-BYTES-LONG}
+      
+      # OAuth (Add when ready)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      
+      # Email (Use Mailhog for development)
+      COURIER_SMTP_CONNECTION_URI: ${KRATOS_COURIER_SMTP_CONNECTION_URI:-smtp://mailhog:1025}
+      COURIER_SMTP_FROM_ADDRESS: ${KRATOS_COURIER_SMTP_FROM_ADDRESS:-noreply@audora.com}
+      
+      # Development mode
+      LOG_LEVEL: ${KRATOS_LOG_LEVEL:-debug}
+      DEV_DISABLE_CSRF: ${KRATOS_DEV_DISABLE_CSRF:-true}
+      
     ports:
       - "4433:4433"
       - "4434:4434"
@@ -128,21 +149,44 @@ services:
       minio:
         condition: service_healthy
     environment:
-      - AUDORA_DB_HOST=audora-db
-      - AUDORA_DB_PORT=5432
-      - AUDORA_DB_USER=${AUDORA_DB_USER:-postgres}
-      - AUDORA_DB_PASSWORD=${AUDORA_DB_PASSWORD:-postgres}
-      - AUDORA_DB_NAME=${AUDORA_DB_NAME:-audora}
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
-      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
-      - MINIO_BUCKET_NAME=audora
-      - KRATOS_PUBLIC_URL=${KRATOS_PUBLIC_URL:-http://localhost:4433}
-      - KRATOS_ADMIN_URL=${KRATOS_ADMIN_URL:-http://localhost:4434}
+      # App
+      APP_ENV: ${APP_ENV:-development}
+      APP_PORT: ${APP_PORT:-8080}
+      
+      # Database
+      AUDORA_DB_HOST: audora-db
+      AUDORA_DB_PORT: 5432
+      AUDORA_DB_USER: ${AUDORA_DB_USER:-postgres}
+      AUDORA_DB_PASSWORD: ${AUDORA_DB_PASSWORD:-postgres}
+      AUDORA_DB_NAME: ${AUDORA_DB_NAME:-audora}
+      
+      # MinIO
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_NAME: audora
+      
+      # Kratos
+      KRATOS_PUBLIC_URL: http://kratos:4433
+      KRATOS_ADMIN_URL: http://kratos:4434
+      
+      # JWT for internal use
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-here}
+      
     ports:
       - "8080:8080"
     volumes:
       - .:/app
+    networks:
+      - audora-network
+
+  # Mailhog for email testing (Development only)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: audora-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
     networks:
       - audora-network
 
