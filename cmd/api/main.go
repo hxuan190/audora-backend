@@ -9,19 +9,23 @@ import (
 	"syscall"
 	"time"
 
-	"aura/config"
-	"aura/pkg/database"
+	"music-app-backend/pkg/database"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	cfg, err := config.LoadConfig()
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log.Fatalf("Failed to load environment variables: %v", err)
 	}
 
-	db, err := database.New(&cfg.Database)
+	user := os.Getenv("AUDORA_DB_USER")
+	password := os.Getenv("AUDORA_DB_PASSWORD")
+	dbname := os.Getenv("AUDORA_DB_NAME")
+
+	db, err := database.New("localhost", "5432", user, password, dbname)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}

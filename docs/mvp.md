@@ -237,16 +237,16 @@
 ## 🏗️ Technical Architecture
 
 ### **Backend Requirements**
-- **Framework**: Node.js with Express
-- **Database**: MongoDB (user data) + PostgreSQL (transactions)
-- **Audio Storage**: AWS S3 with CloudFront CDN
+- **Framework**: Golang with Gin
+- **Database**: ostgreSQL
+- **Audio Storage**: AWS S3 with CloudFront CDN for production | MinIO for development
 - **Real-time**: WebSocket for live features
 - **Payments**: Stripe integration
 - **Authentication**: JWT tokens
 
 ### **Frontend Requirements**
-- **Mobile**: React Native (iOS/Android)
-- **Web**: React with responsive design
+- **Mobile**: Flutter (iOS/Android)
+<!-- - **Web**: React with responsive design -->
 - **Audio**: HTML5 Audio API with Web Audio API fallback
 - **Real-time**: Socket.io client
 - **State Management**: Redux/Context API
