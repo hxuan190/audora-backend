@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"music-app-backend/pkg/database"
+	userModule "music-app-backend/internal/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -29,9 +30,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer db.Close()
 
 	router := gin.Default()
+
+	userModule := userModule.NewUserModule(db.GetDB())
+	userModule.RegisterRoutes(router)
 
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
