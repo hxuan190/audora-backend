@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -34,9 +35,10 @@ func NewWithConfig(config *Config) (*Database, error) {
 		config.DBName,
 		config.SSLMode,
 	)
-
+	fmt.Println(dsn)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
+		log.Printf("Failed to open database: %v", err)
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 

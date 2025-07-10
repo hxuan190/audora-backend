@@ -9,24 +9,42 @@ import (
 	"syscall"
 	"time"
 
-	"music-app-backend/pkg/database"
 	userModule "music-app-backend/internal/user"
+	"music-app-backend/pkg/database"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Failed to load environment variables: %v", err)
+	// Load .env file if it exists (for local development)
+	// In Docker containers, environment variables are passed directly
+	if err := godotenv.Load(); err != nil {
+		log.Printf("No .env file found, using environment variables from container: %v", err)
 	}
 
 	user := os.Getenv("AUDORA_DB_USER")
 	password := os.Getenv("AUDORA_DB_PASSWORD")
 	dbname := os.Getenv("AUDORA_DB_NAME")
+	host := os.Getenv("AUDORA_DB_HOST")
+	port := os.Getenv("AUDORA_DB_PORT")
 
-	db, err := database.New("localhost", "5432", user, password, dbname)
+	// Use default values if not set
+	if host == "" {
+		host = "localhost"
+	}
+	if port == "" {
+		port = "5432"
+	}
+
+	config := database.DefaultConfig()
+	config.Host = host
+	config.Port = port
+	config.User = user
+	config.Password = password
+	config.DBName = dbname
+
+	db, err := database.NewWithConfig(config)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
