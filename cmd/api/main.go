@@ -9,6 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	analyticsModule "music-app-backend/internal/analytics"
+	musicModule "music-app-backend/internal/music"
+	playbackModule "music-app-backend/internal/playback"
+	socialModule "music-app-backend/internal/social"
 	userModule "music-app-backend/internal/user"
 	"music-app-backend/pkg/database"
 
@@ -51,8 +55,21 @@ func main() {
 
 	router := gin.Default()
 
+	// Module registration
 	userModule := userModule.NewUserModule(db.GetDB())
 	userModule.RegisterRoutes(router)
+
+	musicModule := musicModule.NewMusicModule(db.GetDB())
+	musicModule.RegisterRoutes(router)
+
+	analyticsModule := analyticsModule.NewAnalyticsModule(db.GetDB())
+	analyticsModule.RegisterRoutes(router)
+
+	playbackModule := playbackModule.NewPlaybackModule(db.GetDB())
+	playbackModule.RegisterRoutes(router)
+
+	socialModule := socialModule.NewSocialModule(db.GetDB())
+	socialModule.RegisterRoutes(router)
 
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
