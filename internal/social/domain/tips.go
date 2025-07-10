@@ -17,9 +17,9 @@ const (
 
 type Tip struct {
 	model.BaseModel
-	FromUserID            uuid.UUID  `json:"from_user_id" gorm:"not null"`
-	ToArtistID            uuid.UUID  `json:"to_artist_id" gorm:"not null"`
-	SongID                *uuid.UUID `json:"song_id"`
+	FromUserID            uuid.UUID  `json:"from_user_id" gorm:"type:uuid;not null"`
+	ToArtistID            uuid.UUID  `json:"to_artist_id" gorm:"type:uuid;not null"`
+	SongID                *uuid.UUID `json:"song_id" gorm:"type:uuid"`
 	AmountCents           int        `json:"amount_cents" gorm:"not null"`
 	Currency              string     `json:"currency" gorm:"default:'USD';size:3"`
 	StripePaymentIntentID string     `json:"stripe_payment_intent_id" gorm:"unique;size:100"`

@@ -17,8 +17,8 @@ const (
 
 type SongPlay struct {
 	model.BaseModel
-	SongID                uuid.UUID   `json:"song_id" gorm:"not null;index"`
-	UserID                *uuid.UUID  `json:"user_id" gorm:"index"`
+	SongID                uuid.UUID   `json:"song_id" gorm:"type:uuid;not null;index"`
+	UserID                *uuid.UUID  `json:"user_id" gorm:"type:uuid;index"`
 	SessionID             string      `json:"session_id" gorm:"size:100"`
 	IPAddress             string      `json:"ip_address"`
 	UserAgent             string      `json:"user_agent"`

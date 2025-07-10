@@ -16,10 +16,10 @@ const (
 
 type ArtistMessage struct {
 	model.BaseModel
-	ArtistID     uuid.UUID  `json:"artist_id" gorm:"not null"`
+	ArtistID     uuid.UUID  `json:"artist_id" gorm:"type:uuid;not null"`
 	MessageText  string     `json:"message_text" gorm:"not null"`
 	TargetType   TargetType `json:"target_type" gorm:"not null;size:50"`
-	TargetSongID *uuid.UUID `json:"target_song_id"`
+	TargetSongID *uuid.UUID `json:"target_song_id" gorm:"type:uuid"`
 	SentToCount  int        `json:"sent_to_count" gorm:"default:0"`
 	ReadCount    int        `json:"read_count" gorm:"default:0"`
 }

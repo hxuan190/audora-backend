@@ -8,7 +8,7 @@ import (
 
 type UserPreference struct {
 	model.BaseModel
-	UserID                     uuid.UUID `json:"user_id" gorm:"not null;uniqueIndex"`
+	UserID                     uuid.UUID `json:"user_id" gorm:"type:uuid;not null;unique"`
 	PreferredGenres            []int     `json:"preferred_genres" gorm:"type:integer[]"`
 	PreferredMoods             []int     `json:"preferred_moods" gorm:"type:integer[]"`
 	AutoPlay                   bool      `json:"auto_play" gorm:"default:true"`

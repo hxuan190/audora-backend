@@ -21,7 +21,7 @@ type PlayList struct {
 	ArtworkURL           string       `json:"artwork_url"`
 	PlaylistType         PlaylistType `json:"playlist_type" gorm:"not null;size:50"`
 	MoodID               *int         `json:"mood_id"`
-	CreatedByUserID      *uuid.UUID   `json:"created_by_user_id"`
+	CreatedByUserID      *uuid.UUID   `json:"created_by_user_id" gorm:"type:uuid"`
 	IsPublic             bool         `json:"is_public" gorm:"default:true"`
 	PlayCount            int64        `json:"play_count" gorm:"default:0"`
 	SongCount            int          `json:"song_count" gorm:"default:0"`

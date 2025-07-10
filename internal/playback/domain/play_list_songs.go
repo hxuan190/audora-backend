@@ -8,8 +8,8 @@ import (
 
 type PlayListSongs struct {
 	model.BaseModel
-	PlaylistID    uuid.UUID  `json:"playlist_id" gorm:"not null;uniqueIndex:idx_playlist_song"`
-	SongID        uuid.UUID  `json:"song_id" gorm:"not null;uniqueIndex:idx_playlist_song"`
+	PlaylistID    uuid.UUID  `json:"playlist_id" gorm:"type:uuid;not null;uniqueIndex:idx_playlist_song"`
+	SongID        uuid.UUID  `json:"song_id" gorm:"type:uuid;not null;uniqueIndex:idx_playlist_song"`
 	Position      int        `json:"position" gorm:"not null;uniqueIndex:idx_playlist_position"`
-	AddedByUserID *uuid.UUID `json:"added_by_user_id"`
+	AddedByUserID *uuid.UUID `json:"added_by_user_id" gorm:"type:uuid"`
 }

@@ -8,8 +8,8 @@ import (
 
 type DailyArtistStats struct {
 	model.BaseModel
-	ArtistID            uuid.UUID `json:"artist_id" gorm:"not null;uniqueIndex:idx_artist_date"`
-	Date                string    `json:"date" gorm:"not null;uniqueIndex:idx_artist_date"`
+	ArtistID            uuid.UUID `json:"artist_id" gorm:"type:uuid;not null;uniqueIndex:idx_artist_date"`
+	Date                string    `json:"date" gorm:"not null;type:date;uniqueIndex:idx_artist_date"`
 	TotalPlays          int       `json:"total_plays" gorm:"default:0"`
 	UniqueListeners     int       `json:"unique_listeners" gorm:"default:0"`
 	TotalDurationPlayed int       `json:"total_duration_played" gorm:"default:0"`
