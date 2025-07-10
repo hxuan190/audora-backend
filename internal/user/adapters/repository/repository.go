@@ -17,4 +17,11 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	}
 }
 
-func (r *UserRepository) IMockRepository() {}
+func (r *UserRepository) CreateUserAfterRegistration(user *model.User) (*model.User, error) {
+	err := r.db.Create(user).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

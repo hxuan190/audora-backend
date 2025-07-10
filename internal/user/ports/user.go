@@ -1,9 +1,15 @@
 package ports
 
+import (
+	model "music-app-backend/internal/user/domain"
+
+	"github.com/google/uuid"
+)
+
 type IUserRepository interface {
-	IMockRepository()
+	CreateUserAfterRegistration(user *model.User) (*model.User, error)
 }
 
 type IUserService interface {
-	IMockService()
+	CreateUserAfterRegistration(user *model.AfterRegistrationRequest) (*uuid.UUID, error)
 }
