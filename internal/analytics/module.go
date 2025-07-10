@@ -24,4 +24,4 @@ func NewAnalyticsModule(db *gorm.DB) *AnalyticsModule {
 	}
 }
 
-func (s *AnalyticsModule) RegisterRoutes(router *gin.Engine) {}
+func (s *AnalyticsModule) RegisterRoutes(router *gin.RouterGroup) {}

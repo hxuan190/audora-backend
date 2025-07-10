@@ -24,4 +24,4 @@ func NewPlaybackModule(db *gorm.DB) *PlaybackModule {
 	}
 }
 
-func (s *PlaybackModule) RegisterRoutes(router *gin.Engine) {}
+func (s *PlaybackModule) RegisterRoutes(router *gin.RouterGroup) {}

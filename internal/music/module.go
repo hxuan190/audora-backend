@@ -24,4 +24,4 @@ func NewMusicModule(db *gorm.DB) *MusicModule {
 	}
 }
 
-func (s *MusicModule) RegisterRoutes(router *gin.Engine) {}
+func (s *MusicModule) RegisterRoutes(router *gin.RouterGroup) {}

@@ -54,22 +54,24 @@ func main() {
 	}
 
 	router := gin.Default()
+	api := router.Group("api")
+	v1 := api.Group("v1")
 
 	// Module registration
 	userModule := userModule.NewUserModule(db.GetDB())
-	userModule.RegisterRoutes(router)
+	userModule.RegisterRoutes(v1)
 
 	musicModule := musicModule.NewMusicModule(db.GetDB())
-	musicModule.RegisterRoutes(router)
+	musicModule.RegisterRoutes(v1)
 
 	analyticsModule := analyticsModule.NewAnalyticsModule(db.GetDB())
-	analyticsModule.RegisterRoutes(router)
+	analyticsModule.RegisterRoutes(v1)
 
 	playbackModule := playbackModule.NewPlaybackModule(db.GetDB())
-	playbackModule.RegisterRoutes(router)
+	playbackModule.RegisterRoutes(v1)
 
 	socialModule := socialModule.NewSocialModule(db.GetDB())
-	socialModule.RegisterRoutes(router)
+	socialModule.RegisterRoutes(v1)
 
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())

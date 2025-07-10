@@ -24,4 +24,4 @@ func NewSocialModule(db *gorm.DB) *SocialModule {
 	}
 }
 
-func (s *SocialModule) RegisterRoutes(router *gin.Engine) {}
+func (s *SocialModule) RegisterRoutes(router *gin.RouterGroup) {}

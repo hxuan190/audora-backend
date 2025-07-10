@@ -24,6 +24,6 @@ func NewUserModule(db *gorm.DB) *UserModule {
 	}
 }
 
-func (u *UserModule) RegisterRoutes(router *gin.Engine) {
+func (u *UserModule) RegisterRoutes(router *gin.RouterGroup) {
 	router.POST("/users")
 }
