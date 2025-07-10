@@ -10,7 +10,7 @@ import (
 
 type BaseModel struct {
 	ID        uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;"`
-	Status    string    `json:"status"`
+	Status    string    `json:"status" gorm:"default:active;check:status IN ('active', 'inactive')"`
 	CreatedAt int64     `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt int64     `json:"updated_at" gorm:"autoUpdateTime"`
 }
@@ -23,7 +23,6 @@ func NewBaseModel() *BaseModel {
 
 	return &BaseModel{
 		ID:        uuid,
-		Status:    "active",
 		CreatedAt: time.Now().Unix(),
 		UpdatedAt: time.Now().Unix(),
 	}

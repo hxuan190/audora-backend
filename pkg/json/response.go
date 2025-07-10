@@ -1,5 +1,4 @@
-
-package json
+package json_response
 
 import (
 	"net/http"
@@ -130,6 +129,6 @@ func ResponseCreated(c *gin.Context, data interface{}) {
 	ResponseJSON(c, 201, "Created", data)
 }
 
-func ResponseInternalError(c *gin.Context) {
-	ResponseJSON(c, 500, "Internal Server Error", nil)
+func ResponseInternalError(c *gin.Context, err error) {
+	ResponseJSON(c, 500, "Internal Server Error", err.Error())
 }
