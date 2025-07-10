@@ -77,6 +77,21 @@ services:
     networks:
       - audora-network
 
+  # Kratos database migration
+  kratos-migrate:
+    image: oryd/kratos:latest
+    container_name: kratos-migrate
+    depends_on:
+      kratos-db:
+        condition: service_healthy
+    environment:
+      DSN: postgres://${KRATOS_DB_USER:-kratos}:${KRATOS_DB_PASSWORD:-kratos}@kratos-db:5432/${KRATOS_DB_NAME:-kratos}?sslmode=disable&max_conns=50&max_idle_conns=10
+    volumes:
+      - ./kratos:/etc/config/kratos
+    command: migrate sql -e -y
+    networks:
+      - audora-network
+
   # Ory Kratos identity service (Enhanced but simple)
   kratos:
     image: oryd/kratos:latest
@@ -84,6 +99,8 @@ services:
     depends_on:
       kratos-db:
         condition: service_healthy
+      kratos-migrate:
+        condition: service_completed_successfully
     environment:
       # Database
       DSN: postgres://${KRATOS_DB_USER:-kratos}:${KRATOS_DB_PASSWORD:-kratos}@kratos-db:5432/${KRATOS_DB_NAME:-kratos}?sslmode=disable&max_conns=50&max_idle_conns=10
@@ -104,8 +121,8 @@ services:
       SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: http://audora-api:8080/api/internal/hooks/after-registration
       
       # Secrets (Change these!)
-      SECRETS_COOKIE: ${KRATOS_SECRET_COOKIE:-PLEASE-CHANGE-ME-I-AM-VERY-INSECURE}
-      SECRETS_CIPHER: ${KRATOS_SECRET_CIPHER:-32-LONG-SECRET-AT-LEAST-32-BYTES-LONG}
+      SECRETS_COOKIE: ${KRATOS_SECRET_COOKIE:-63f4945d921d599f27ae4fdf5bada3f1}
+      SECRETS_CIPHER: ${KRATOS_SECRET_CIPHER:-cf62abb2197c0a173c9a76b88caaedc3}
       
       # OAuth (Add when ready)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
