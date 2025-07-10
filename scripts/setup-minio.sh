@@ -15,12 +15,12 @@ until mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MI
   sleep 2
 done
 
-# Create audora bucket
+# Create audora bucket (ignore if already exists)
 echo "Creating audora bucket..."
-mc mb myminio/audora
+mc mb myminio/audora 2>/dev/null || echo "Bucket already exists"
 
 # Set public read policy for audora bucket
 echo "Setting public read policy for audora bucket..."
-mc policy set download myminio/audora
+mc anonymous set download myminio/audora
 
 echo "MinIO setup completed successfully!" 
