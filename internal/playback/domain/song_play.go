@@ -27,5 +27,5 @@ type SongPlay struct {
 	DurationPlayedSeconds int         `json:"duration_played_seconds" gorm:"default:0"`
 	Completed             bool        `json:"completed" gorm:"default:false"`
 	SkipReason            *SkipReason `json:"skip_reason" gorm:"size:50"`
-	PlayedAt              int64       `json:"played_at" gorm:"default:CURRENT_TIMESTAMP;index"`
+	PlayedAt              int64       `json:"played_at" gorm:"autoCreateTime;index"`
 }
