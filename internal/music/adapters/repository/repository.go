@@ -2,18 +2,19 @@ package repository
 
 import (
 	model "music-app-backend/internal/music/domain"
-	"music-app-backend/pkg/database"
 
 	"gorm.io/gorm"
 )
 
 type MusicRepository struct {
-	database.Repository
+	db *gorm.DB
 }
 
 func NewMusicRepository(db *gorm.DB) *MusicRepository {
 	db.AutoMigrate(&model.Artist{}, &model.Genre{}, &model.Song{})
 	return &MusicRepository{
-		Repository: database.NewRepository(db),
+		db: db,
 	}
 }
+
+func (r *MusicRepository) IMockRepository() {}
