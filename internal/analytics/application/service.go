@@ -1,13 +1,13 @@
 package application
 
-import "music-app-backend/internal/analytics/ports"
+import "music-app-backend/internal/analytics/adapters/repository"
 
 type AnalyticsService struct {
-	repository ports.IAnalyticsRepository
+	repository *repository.AnalyticsRepository
 }
 
-func NewAnalyticsService(repository ports.IAnalyticsRepository) *AnalyticsService {
+func NewAnalyticsService(repository *repository.AnalyticsRepository) *AnalyticsService {
 	return &AnalyticsService{repository: repository}
-}
+}	
 
 func (s *AnalyticsService) IMockService() {}

@@ -3,15 +3,14 @@ package social
 import (
 	"music-app-backend/internal/social/adapters/repository"
 	"music-app-backend/internal/social/application"
-	"music-app-backend/internal/social/ports"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type SocialModule struct {
-	Repository ports.ISocialRepository
-	Service    ports.ISocialService
+	Repository *repository.SocialRepository
+	Service    *application.SocialService
 }
 
 func NewSocialModule(db *gorm.DB) *SocialModule {

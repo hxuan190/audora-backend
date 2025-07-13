@@ -3,15 +3,14 @@ package analytics
 import (
 	"music-app-backend/internal/analytics/adapters/repository"
 	"music-app-backend/internal/analytics/application"
-	"music-app-backend/internal/analytics/ports"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type AnalyticsModule struct {
-	Repository ports.IAnalyticsRepository
-	Service    ports.IAnalyticsService
+	Repository *repository.AnalyticsRepository
+	Service    *application.AnalyticsService
 }
 
 func NewAnalyticsModule(db *gorm.DB) *AnalyticsModule {

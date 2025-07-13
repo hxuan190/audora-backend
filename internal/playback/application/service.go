@@ -1,12 +1,12 @@
 package application
 
-import "music-app-backend/internal/playback/ports"
+import "music-app-backend/internal/playback/adapters/repository"
 
 type PlaybackService struct {
-	repository ports.IPlaybackRepository
+	repository *repository.PlaybackRepository
 }
 
-func NewPlaybackService(repository ports.IPlaybackRepository) *PlaybackService {
+func NewPlaybackService(repository *repository.PlaybackRepository) *PlaybackService {
 	return &PlaybackService{repository: repository}
 }
 

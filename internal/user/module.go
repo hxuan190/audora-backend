@@ -4,15 +4,14 @@ import (
 	"music-app-backend/internal/user/adapters/http"
 	"music-app-backend/internal/user/adapters/repository"
 	"music-app-backend/internal/user/application"
-	"music-app-backend/internal/user/ports"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type UserModule struct {
-	Repository ports.IUserRepository
-	Service    ports.IUserService
+	Repository *repository.UserRepository
+	Service    *application.UserService
 	Handler    *http.UserHandler
 }
 

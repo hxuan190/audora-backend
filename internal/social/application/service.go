@@ -1,12 +1,12 @@
 package application
 
-import "music-app-backend/internal/social/ports"
+import "music-app-backend/internal/social/adapters/repository"
 
 type SocialService struct {
-	repository ports.ISocialRepository
+	repository *repository.SocialRepository
 }
 
-func NewSocialService(repository ports.ISocialRepository) *SocialService {
+func NewSocialService(repository *repository.SocialRepository) *SocialService {
 	return &SocialService{repository: repository}
 }
 

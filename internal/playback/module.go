@@ -3,15 +3,14 @@ package playback
 import (
 	"music-app-backend/internal/playback/adapters/repository"
 	"music-app-backend/internal/playback/application"
-	"music-app-backend/internal/playback/ports"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type PlaybackModule struct {
-	Repository ports.IPlaybackRepository
-	Service    ports.IPlaybackService
+	Repository *repository.PlaybackRepository
+	Service    *application.PlaybackService
 }
 
 func NewPlaybackModule(db *gorm.DB) *PlaybackModule {

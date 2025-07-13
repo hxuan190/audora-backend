@@ -1,8 +1,8 @@
 package http
 
 import (
+	user_service "music-app-backend/internal/user/application"
 	model "music-app-backend/internal/user/domain"
-	"music-app-backend/internal/user/ports"
 	app_error "music-app-backend/pkg/error"
 	json_response "music-app-backend/pkg/json"
 
@@ -10,10 +10,10 @@ import (
 )
 
 type UserHandler struct {
-	userService ports.IUserService
+	userService *user_service.UserService
 }
 
-func NewUserHandler(userService ports.IUserService) *UserHandler {
+func NewUserHandler(userService *user_service.UserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}

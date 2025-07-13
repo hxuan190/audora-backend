@@ -1,17 +1,17 @@
 package application
 
 import (
+	"music-app-backend/internal/user/adapters/repository"
 	model "music-app-backend/internal/user/domain"
-	"music-app-backend/internal/user/ports"
 
 	"github.com/google/uuid"
 )
 
 type UserService struct {
-	userRepo ports.IUserRepository
+	userRepo *repository.UserRepository
 }
 
-func NewUserService(userRepo ports.IUserRepository) *UserService {
+func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{
 		userRepo: userRepo,
 	}
