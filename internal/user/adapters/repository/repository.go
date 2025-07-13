@@ -11,7 +11,7 @@ type UserRepository struct {
 }
 
 func NewUserRepository(db *gorm.DB) *UserRepository {
-	db.AutoMigrate(&model.User{}, &model.UserFavorites{}, &model.UserPreference{})
+	// db.AutoMigrate(&model.User{}, &model.UserFavorites{}, &model.UserPreference{})
 	return &UserRepository{
 		db: db,
 	}

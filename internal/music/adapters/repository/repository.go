@@ -1,8 +1,6 @@
 package repository
 
 import (
-	model "music-app-backend/internal/music/domain"
-
 	"gorm.io/gorm"
 )
 
@@ -11,7 +9,7 @@ type MusicRepository struct {
 }
 
 func NewMusicRepository(db *gorm.DB) *MusicRepository {
-	db.AutoMigrate(&model.Artist{}, &model.Genre{}, &model.Song{})
+	// db.AutoMigrate(&model.Artist{}, &model.Genre{}, &model.Song{})
 	return &MusicRepository{
 		db: db,
 	}

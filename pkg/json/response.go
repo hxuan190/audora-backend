@@ -1,9 +1,9 @@
 package json_response
 
 import (
+	"encoding/json"
 	"net/http"
 
-	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +18,7 @@ type SonicJSON struct {
 }
 
 func (r SonicJSON) Render(w http.ResponseWriter) error {
-	jsonBytes, err := jsonAPI.Marshal(r.Data)
+	jsonBytes, err := json.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
@@ -30,14 +30,14 @@ func (r SonicJSON) WriteContentType(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 }
 
-var jsonAPI = sonic.Config{
-	UseNumber:            true,
-	EscapeHTML:           false,
-	SortMapKeys:          false,
-	CompactMarshaler:     true,
-	NoQuoteTextMarshaler: true,
-	NoNullSliceOrMap:     true,
-}.Froze()
+// var jsonAPI = sonic.Config{
+// 	UseNumber:            true,
+// 	EscapeHTML:           false,
+// 	SortMapKeys:          false,
+// 	CompactMarshaler:     true,
+// 	NoQuoteTextMarshaler: true,
+// 	NoNullSliceOrMap:     true,
+// }.Froze()
 
 var (
 	successResponse       = mustMarshal(Response{Code: 200, Message: "Success"})
@@ -50,7 +50,7 @@ var (
 )
 
 func mustMarshal(v interface{}) []byte {
-	b, _ := jsonAPI.Marshal(v)
+	b, _ := json.Marshal(v)
 	return b
 }
 

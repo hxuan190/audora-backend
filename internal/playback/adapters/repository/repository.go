@@ -1,8 +1,6 @@
 package repository
 
 import (
-	model "music-app-backend/internal/playback/domain"
-
 	"gorm.io/gorm"
 )
 
@@ -11,7 +9,7 @@ type PlaybackRepository struct {
 }
 
 func NewPlaybackRepository(db *gorm.DB) *PlaybackRepository {
-	db.AutoMigrate(&model.ListeningSession{}, &model.Mood{}, &model.PlayListSongs{}, &model.PlayList{}, &model.SongPlay{})
+	// db.AutoMigrate(&model.ListeningSession{}, &model.Mood{}, &model.PlayListSongs{}, &model.PlayList{}, &model.SongPlay{})
 	return &PlaybackRepository{
 		db: db,
 	}
