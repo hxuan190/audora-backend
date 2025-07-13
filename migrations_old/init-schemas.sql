@@ -1,12 +1,9 @@
 -- Music App MVP Database Schema
 -- Designed for PostgreSQL with Kratos authentication integration
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Users table (linked to Kratos identities)
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     kratos_identity_id UUID NOT NULL UNIQUE, -- Links to Kratos identity
     email VARCHAR(255) NOT NULL UNIQUE,
     user_type VARCHAR(20) NOT NULL CHECK (user_type IN ('artist', 'listener', 'admin')),
@@ -20,7 +17,7 @@ CREATE TABLE users (
 
 -- Artists table (extends user for artist-specific data)
 CREATE TABLE artists (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     user_id UUID NOT NULL, -- No FK reference
     artist_name VARCHAR(150) NOT NULL,
     bio TEXT,
@@ -47,14 +44,14 @@ CREATE TYPE content_tier AS ENUM ('public_discovery', 'fan_exclusives', 'collabo
 
 -- Genres and moods lookup tables
 CREATE TABLE genres (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY NOT NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
     is_active BOOLEAN DEFAULT true
 );
 
 CREATE TABLE moods (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY NOT NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
     color_hex VARCHAR(7), -- For UI theming
@@ -63,7 +60,7 @@ CREATE TABLE moods (
 
 -- Songs table
 CREATE TABLE songs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     artist_id UUID NOT NULL, -- No FK reference
     title VARCHAR(200) NOT NULL,
     description TEXT,
@@ -71,8 +68,8 @@ CREATE TABLE songs (
     file_size_bytes BIGINT,
     duration_seconds INTEGER,
     artwork_url TEXT,
-    genre_id INTEGER, -- No FK reference
-    mood_id INTEGER, -- No FK reference
+    genre_id UUID, -- No FK reference
+    mood_id UUID, -- No FK reference
     tier content_tier NOT NULL DEFAULT 'public_discovery',
     ai_suggested_tier content_tier, -- AI recommendation
     tier_override_by_artist BOOLEAN DEFAULT false,
@@ -94,7 +91,7 @@ CREATE TABLE songs (
 
 -- Song plays tracking
 CREATE TABLE song_plays (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     song_id UUID NOT NULL, -- No FK reference
     user_id UUID, -- No FK reference, nullable for anonymous plays
     session_id VARCHAR(100), -- For anonymous tracking
@@ -114,7 +111,7 @@ CREATE TABLE song_plays (
 
 -- User favorites/likes
 CREATE TABLE user_favorites (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     user_id UUID NOT NULL, -- No FK reference
     song_id UUID NOT NULL, -- No FK reference
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -124,7 +121,7 @@ CREATE TABLE user_favorites (
 
 -- Artist followers
 CREATE TABLE artist_followers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     artist_id UUID NOT NULL, -- No FK reference
     follower_user_id UUID NOT NULL, -- No FK reference
     notification_enabled BOOLEAN DEFAULT true,
@@ -135,12 +132,12 @@ CREATE TABLE artist_followers (
 
 -- Playlists
 CREATE TABLE playlists (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     name VARCHAR(150) NOT NULL,
     description TEXT,
     artwork_url TEXT,
     playlist_type VARCHAR(50) NOT NULL, -- curated, user_created, mood_based
-    mood_id INTEGER, -- No FK reference
+    mood_id UUID, -- No FK reference
     created_by_user_id UUID, -- No FK reference
     is_public BOOLEAN DEFAULT true,
     play_count BIGINT DEFAULT 0,
@@ -152,7 +149,7 @@ CREATE TABLE playlists (
 
 -- Playlist songs (many-to-many)
 CREATE TABLE playlist_songs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     playlist_id UUID NOT NULL, -- No FK reference
     song_id UUID NOT NULL, -- No FK reference
     position INTEGER NOT NULL,
@@ -165,7 +162,7 @@ CREATE TABLE playlist_songs (
 
 -- Tips/payments
 CREATE TABLE tips (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     from_user_id UUID NOT NULL, -- No FK reference
     to_artist_id UUID NOT NULL, -- No FK reference
     song_id UUID, -- No FK reference, optional: tip for specific song
@@ -184,7 +181,7 @@ CREATE TABLE tips (
 
 -- Real-time artist-fan messaging
 CREATE TABLE artist_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     artist_id UUID NOT NULL, -- No FK reference
     message_text TEXT NOT NULL,
     target_type VARCHAR(50) NOT NULL, -- all_active_listeners, specific_song_listeners, followers
@@ -196,7 +193,7 @@ CREATE TABLE artist_messages (
 
 -- Message deliveries (tracking who received messages)
 CREATE TABLE message_deliveries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     message_id UUID NOT NULL, -- No FK reference
     user_id UUID NOT NULL, -- No FK reference
     delivered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -207,7 +204,7 @@ CREATE TABLE message_deliveries (
 
 -- Current listening sessions (for real-time dashboard)
 CREATE TABLE listening_sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     user_id UUID, -- No FK reference
     session_id VARCHAR(100) NOT NULL, -- For anonymous users
     song_id UUID NOT NULL, -- No FK reference
@@ -224,7 +221,7 @@ CREATE TABLE listening_sessions (
 
 -- User preferences
 CREATE TABLE user_preferences (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     user_id UUID NOT NULL, -- No FK reference
     preferred_genres INTEGER[], -- Array of genre IDs
     preferred_moods INTEGER[], -- Array of mood IDs
@@ -242,7 +239,7 @@ CREATE TABLE user_preferences (
 
 -- Analytics aggregation tables for performance
 CREATE TABLE daily_artist_stats (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     artist_id UUID NOT NULL, -- No FK reference
     date DATE NOT NULL,
     total_plays INTEGER DEFAULT 0,
@@ -256,7 +253,7 @@ CREATE TABLE daily_artist_stats (
 );
 
 CREATE TABLE daily_song_stats (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    id UUID PRIMARY KEY NOT NULL,
     song_id UUID NOT NULL, -- No FK reference
     date DATE NOT NULL,
     play_count INTEGER DEFAULT 0,
