@@ -3,16 +3,16 @@
 
 -- Songs table
 CREATE TABLE songs (
-    id UUID PRIMARY KEY NOT NULL,
-    artist_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    artist_id BIGINT NOT NULL, -- No FK reference
     title VARCHAR(200) NOT NULL,
     description TEXT,
     file_url TEXT NOT NULL, -- S3/MinIO URL
     file_size_bytes BIGINT,
     duration_seconds INTEGER,
     artwork_url TEXT,
-    genre_id UUID, -- No FK reference
-    mood_id UUID, -- No FK reference
+    genre_id BIGINT, -- No FK reference
+    mood_id BIGINT, -- No FK reference
     tier content_tier NOT NULL DEFAULT 'public_discovery',
     ai_suggested_tier content_tier, -- AI recommendation
     tier_override_by_artist BOOLEAN DEFAULT false,
@@ -34,9 +34,9 @@ CREATE TABLE songs (
 
 -- Song plays tracking
 CREATE TABLE song_plays (
-    id UUID PRIMARY KEY NOT NULL,
-    song_id UUID NOT NULL, -- No FK reference
-    user_id UUID, -- No FK reference, nullable for anonymous plays
+    id BIGINT PRIMARY KEY NOT NULL,
+    song_id BIGINT NOT NULL, -- No FK reference
+    user_id BIGINT, -- No FK reference, nullable for anonymous plays
     session_id VARCHAR(100), -- For anonymous tracking
     ip_address INET,
     user_agent TEXT,
@@ -55,9 +55,9 @@ CREATE INDEX idx_song_plays_played_at ON song_plays(played_at);
 
 -- User favorites/likes
 CREATE TABLE user_favorites (
-    id UUID PRIMARY KEY NOT NULL,
-    user_id UUID NOT NULL, -- No FK reference
-    song_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    user_id BIGINT NOT NULL, -- No FK reference
+    song_id BIGINT NOT NULL, -- No FK reference
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     UNIQUE(user_id, song_id)
@@ -65,9 +65,9 @@ CREATE TABLE user_favorites (
 
 -- Artist followers
 CREATE TABLE artist_followers (
-    id UUID PRIMARY KEY NOT NULL,
-    artist_id UUID NOT NULL, -- No FK reference
-    follower_user_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    artist_id BIGINT NOT NULL, -- No FK reference
+    follower_user_id BIGINT NOT NULL, -- No FK reference
     notification_enabled BOOLEAN DEFAULT true,
     followed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -76,13 +76,13 @@ CREATE TABLE artist_followers (
 
 -- Playlists
 CREATE TABLE playlists (
-    id UUID PRIMARY KEY NOT NULL,
+    id BIGINT PRIMARY KEY NOT NULL,
     name VARCHAR(150) NOT NULL,
     description TEXT,
     artwork_url TEXT,
     playlist_type VARCHAR(50) NOT NULL, -- curated, user_created, mood_based
-    mood_id UUID, -- No FK reference
-    created_by_user_id UUID, -- No FK reference
+    mood_id BIGINT, -- No FK reference
+    created_by_user_id BIGINT, -- No FK reference
     is_public BOOLEAN DEFAULT true,
     play_count BIGINT DEFAULT 0,
     song_count INTEGER DEFAULT 0,
@@ -93,11 +93,11 @@ CREATE TABLE playlists (
 
 -- Playlist songs (many-to-many)
 CREATE TABLE playlist_songs (
-    id UUID PRIMARY KEY NOT NULL,
-    playlist_id UUID NOT NULL, -- No FK reference
-    song_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    playlist_id BIGINT NOT NULL, -- No FK reference
+    song_id BIGINT NOT NULL, -- No FK reference
     position INTEGER NOT NULL,
-    added_by_user_id UUID, -- No FK reference
+    added_by_user_id BIGINT, -- No FK reference
     added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     UNIQUE(playlist_id, song_id),

@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_tips_created_at ON tips(created_at);
 CREATE OR REPLACE FUNCTION update_artist_totals()
 RETURNS TRIGGER AS $$
 DECLARE
-    artist_id UUID;
+    artist_id BIGINT;
 BEGIN
     SELECT artist_id INTO artist_id FROM songs WHERE id = NEW.song_id;
 
@@ -103,28 +103,29 @@ CREATE TRIGGER trigger_update_tip_totals
 
 -- Insert initial data
 INSERT INTO genres (id, name, description) VALUES
-('00000000-0000-0000-0000-000000000001', 'Electronic', 'Electronic music and EDM'),
-('00000000-0000-0000-0000-000000000002', 'Hip Hop', 'Hip hop and rap music'),
-('00000000-0000-0000-0000-000000000003', 'Rock', 'Rock and alternative music'),
-('00000000-0000-0000-0000-000000000004', 'Pop', 'Popular music'),
-('00000000-0000-0000-0000-000000000005', 'Jazz', 'Jazz and fusion'),
-('00000000-0000-0000-0000-000000000006', 'Classical', 'Classical and orchestral'),
-('00000000-0000-0000-0000-000000000007', 'R&B', 'R&B and soul music'),
-('00000000-0000-0000-0000-000000000008', 'Country', 'Country and folk'),
-('00000000-0000-0000-0000-000000000009', 'Indie', 'Independent and alternative'),
-('00000000-0000-0000-0000-000000000010', 'World', 'World and ethnic music');
+(1000000000000000001, 'Electronic', 'Electronic music and EDM'),
+(1000000000000000002, 'Hip Hop', 'Hip hop and rap music'),
+(1000000000000000003, 'Rock', 'Rock and alternative music'),
+(1000000000000000004, 'Pop', 'Popular music'),
+(1000000000000000005, 'Jazz', 'Jazz and fusion'),
+(1000000000000000006, 'Classical', 'Classical and orchestral'),
+(1000000000000000007, 'R&B', 'R&B and soul music'),
+(1000000000000000008, 'Country', 'Country and folk'),
+(1000000000000000009, 'Indie', 'Independent and alternative'),
+(1000000000000000010, 'World', 'World and ethnic music');
 
 INSERT INTO moods (id, name, description, color_hex) VALUES
-('00000000-0000-0000-0000-000000000011', 'Focus', 'Music for concentration and productivity', '#4A90E2'),
-('00000000-0000-0000-0000-000000000012', 'Workout', 'High energy music for exercise', '#E74C3C'),
-('00000000-0000-0000-0000-000000000013', 'Chill', 'Relaxed and mellow vibes', '#2ECC71'),
-('00000000-0000-0000-0000-000000000014', 'Morning', 'Uplifting music to start the day', '#F39C12'),
-('00000000-0000-0000-0000-000000000015', 'Evening', 'Calm music for winding down', '#8E44AD'),
-('00000000-0000-0000-0000-000000000016', 'Party', 'Upbeat music for celebrations', '#E91E63'),
-('00000000-0000-0000-0000-000000000017', 'Study', 'Ambient music for learning', '#607D8B'),
-('00000000-0000-0000-0000-000000000018', 'Sleep', 'Peaceful music for rest', '#34495E'),
-('00000000-0000-0000-0000-000000000019', 'Drive', 'Music for road trips', '#FF5722'),
-('00000000-0000-0000-0000-000000000020', 'Romance', 'Music for romantic moments', '#E91E63');
+(1000000000000000011, 'Focus', 'Music for concentration and productivity', '#4A90E2'),
+(1000000000000000012, 'Workout', 'High energy music for exercise', '#E74C3C'),
+(1000000000000000013, 'Chill', 'Relaxed and mellow vibes', '#2ECC71'),
+(1000000000000000014, 'Morning', 'Uplifting music to start the day', '#F39C12'),
+(1000000000000000015, 'Evening', 'Calm music for winding down', '#8E44AD'),
+(1000000000000000016, 'Party', 'Upbeat music for celebrations', '#E91E63'),
+(1000000000000000017, 'Study', 'Ambient music for learning', '#607D8B'),
+(1000000000000000018, 'Sleep', 'Peaceful music for rest', '#34495E'),
+(1000000000000000019, 'Drive', 'Music for road trips', '#FF5722'),
+(1000000000000000020, 'Romance', 'Music for romantic moments', '#E91E63');
+
 
 -- +goose StatementEnd
 

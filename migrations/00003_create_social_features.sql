@@ -3,10 +3,10 @@
 
 -- Tips/payments
 CREATE TABLE tips (
-    id UUID PRIMARY KEY NOT NULL,
-    from_user_id UUID NOT NULL, -- No FK reference
-    to_artist_id UUID NOT NULL, -- No FK reference
-    song_id UUID, -- No FK reference, optional: tip for specific song
+    id BIGINT PRIMARY KEY NOT NULL,
+    from_user_id BIGINT NOT NULL, -- No FK reference
+    to_artist_id BIGINT NOT NULL, -- No FK reference
+    song_id BIGINT, -- No FK reference, optional: tip for specific song
     amount_cents INTEGER NOT NULL, -- Store in cents to avoid decimal issues
     currency VARCHAR(3) DEFAULT 'USD',
     stripe_payment_intent_id VARCHAR(100) UNIQUE,
@@ -22,11 +22,11 @@ CREATE TABLE tips (
 
 -- Real-time artist-fan messaging
 CREATE TABLE artist_messages (
-    id UUID PRIMARY KEY NOT NULL,
-    artist_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    artist_id BIGINT NOT NULL, -- No FK reference
     message_text TEXT NOT NULL,
     target_type VARCHAR(50) NOT NULL, -- all_active_listeners, specific_song_listeners, followers
-    target_song_id UUID, -- No FK reference
+    target_song_id BIGINT, -- No FK reference
     sent_to_count INTEGER DEFAULT 0,
     read_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -34,9 +34,9 @@ CREATE TABLE artist_messages (
 
 -- Message deliveries (tracking who received messages)
 CREATE TABLE message_deliveries (
-    id UUID PRIMARY KEY NOT NULL,
-    message_id UUID NOT NULL, -- No FK reference
-    user_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    message_id BIGINT NOT NULL, -- No FK reference
+    user_id BIGINT NOT NULL, -- No FK reference
     delivered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     read_at TIMESTAMP WITH TIME ZONE,
     
@@ -45,11 +45,11 @@ CREATE TABLE message_deliveries (
 
 -- Current listening sessions (for real-time dashboard)
 CREATE TABLE listening_sessions (
-    id UUID PRIMARY KEY NOT NULL,
-    user_id UUID, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    user_id BIGINT, -- No FK reference
     session_id VARCHAR(100) NOT NULL, -- For anonymous users
-    song_id UUID NOT NULL, -- No FK reference
-    artist_id UUID NOT NULL, -- No FK reference
+    song_id BIGINT NOT NULL, -- No FK reference
+    artist_id BIGINT NOT NULL, -- No FK reference
     country_code VARCHAR(2),
     city VARCHAR(100),
     started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -63,8 +63,8 @@ CREATE INDEX idx_listening_sessions_active ON listening_sessions(is_active, last
 
 -- User preferences
 CREATE TABLE user_preferences (
-    id UUID PRIMARY KEY NOT NULL,
-    user_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    user_id BIGINT NOT NULL, -- No FK reference
     preferred_genres INTEGER[], -- Array of genre IDs
     preferred_moods INTEGER[], -- Array of mood IDs
     auto_play BOOLEAN DEFAULT true,

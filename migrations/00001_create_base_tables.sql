@@ -3,7 +3,7 @@
 
 -- Users table (linked to Kratos identities)
 CREATE TABLE users (
-    id UUID PRIMARY KEY NOT NULL,
+    id BIGINT PRIMARY KEY NOT NULL,
     kratos_identity_id UUID NOT NULL UNIQUE, -- Links to Kratos identity
     email VARCHAR(255) NOT NULL UNIQUE,
     user_type VARCHAR(20) NOT NULL CHECK (user_type IN ('artist', 'listener', 'admin')),
@@ -17,8 +17,8 @@ CREATE TABLE users (
 
 -- Artists table (extends user for artist-specific data)
 CREATE TABLE artists (
-    id UUID PRIMARY KEY NOT NULL,
-    user_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    user_id BIGINT NOT NULL, -- No FK reference
     artist_name VARCHAR(150) NOT NULL,
     bio TEXT,
     profile_image_url TEXT,
@@ -44,14 +44,14 @@ CREATE TYPE content_tier AS ENUM ('public_discovery', 'fan_exclusives', 'collabo
 
 -- Genres and moods lookup tables
 CREATE TABLE genres (
-    id UUID PRIMARY KEY NOT NULL,
+    id BIGINT PRIMARY KEY NOT NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
     is_active BOOLEAN DEFAULT true
 );
 
 CREATE TABLE moods (
-    id UUID PRIMARY KEY NOT NULL,
+    id BIGINT PRIMARY KEY NOT NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
     color_hex VARCHAR(7), -- For UI theming

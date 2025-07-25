@@ -3,8 +3,8 @@
 
 -- Analytics aggregation tables for performance
 CREATE TABLE daily_artist_stats (
-    id UUID PRIMARY KEY NOT NULL,
-    artist_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    artist_id BIGINT NOT NULL, -- No FK reference
     date DATE NOT NULL,
     total_plays INTEGER DEFAULT 0,
     unique_listeners INTEGER DEFAULT 0,
@@ -17,8 +17,8 @@ CREATE TABLE daily_artist_stats (
 );
 
 CREATE TABLE daily_song_stats (
-    id UUID PRIMARY KEY NOT NULL,
-    song_id UUID NOT NULL, -- No FK reference
+    id BIGINT PRIMARY KEY NOT NULL,
+    song_id BIGINT NOT NULL, -- No FK reference
     date DATE NOT NULL,
     play_count INTEGER DEFAULT 0,
     unique_listeners INTEGER DEFAULT 0,
