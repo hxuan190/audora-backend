@@ -17,7 +17,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 	}
 }
 
-func (s *UserService) CreateUserAfterRegistration(user *model.AfterRegistrationRequest) (*uuid.UUID, error) {
+func (s *UserService) CreateUserAfterRegistration(user *model.AfterRegistrationRequest) (*uint64, error) {
 	identityID, err := uuid.Parse(user.Identity.ID)
 	if err != nil {
 		return nil, err

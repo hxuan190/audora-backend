@@ -2,8 +2,6 @@ package model
 
 import (
 	"music-app-backend/pkg/model"
-
-	"github.com/google/uuid"
 )
 
 type TargetType string
@@ -16,10 +14,10 @@ const (
 
 type ArtistMessage struct {
 	model.BaseModel
-	ArtistID     uuid.UUID  `json:"artist_id" gorm:"type:uuid;not null"`
+	ArtistID     uint64     `json:"artist_id" gorm:"not null"`
 	MessageText  string     `json:"message_text" gorm:"not null"`
 	TargetType   TargetType `json:"target_type" gorm:"not null;size:50"`
-	TargetSongID *uuid.UUID `json:"target_song_id" gorm:"type:uuid"`
+	TargetSongID *uint64    `json:"target_song_id"`
 	SentToCount  int        `json:"sent_to_count" gorm:"default:0"`
 	ReadCount    int        `json:"read_count" gorm:"default:0"`
 }

@@ -2,8 +2,6 @@ package model
 
 import (
 	"music-app-backend/pkg/model"
-
-	"github.com/google/uuid"
 )
 
 type PlaylistType string
@@ -20,8 +18,8 @@ type PlayList struct {
 	Description          string       `json:"description"`
 	ArtworkURL           string       `json:"artwork_url"`
 	PlaylistType         PlaylistType `json:"playlist_type" gorm:"not null;size:50"`
-	MoodID               *uuid.UUID   `json:"mood_id" gorm:"type:uuid"`
-	CreatedByUserID      *uuid.UUID   `json:"created_by_user_id" gorm:"type:uuid"`
+	MoodID               *uint64      `json:"mood_id"`
+	CreatedByUserID      *uint64      `json:"created_by_user_id"`
 	IsPublic             bool         `json:"is_public" gorm:"default:true"`
 	PlayCount            int64        `json:"play_count" gorm:"default:0"`
 	SongCount            int          `json:"song_count" gorm:"default:0"`

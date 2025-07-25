@@ -2,8 +2,6 @@ package model
 
 import (
 	"music-app-backend/pkg/model"
-
-	"github.com/google/uuid"
 )
 
 type SkipReason string
@@ -17,8 +15,8 @@ const (
 
 type SongPlay struct {
 	model.BaseModel
-	SongID                uuid.UUID   `json:"song_id" gorm:"type:uuid;not null;index"`
-	UserID                *uuid.UUID  `json:"user_id" gorm:"type:uuid;index"`
+	SongID                uint64      `json:"song_id" gorm:"not null;index"`
+	UserID                *uint64     `json:"user_id" gorm:"index"`
 	SessionID             string      `json:"session_id" gorm:"size:100"`
 	IPAddress             string      `json:"ip_address"`
 	UserAgent             string      `json:"user_agent"`

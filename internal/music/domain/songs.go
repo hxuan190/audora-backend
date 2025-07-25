@@ -2,8 +2,6 @@ package model
 
 import (
 	"music-app-backend/pkg/model"
-
-	"github.com/google/uuid"
 )
 
 type ContentTier string
@@ -26,7 +24,7 @@ const (
 
 type Song struct {
 	model.BaseModel
-	ArtistID             uuid.UUID        `json:"artist_id" gorm:"type:uuid;not null"`
+	ArtistID             uint64           `json:"artist_id" gorm:"not null"`
 	Title                string           `json:"title" gorm:"not null;size:200"`
 	Description          string           `json:"description"`
 	FileURL              string           `json:"file_url" gorm:"not null"`
