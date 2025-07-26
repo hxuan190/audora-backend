@@ -7,23 +7,14 @@ import (
 )
 
 const (
-	EntityUser             goflakeid.EntityType = 0
-	EntityArtist           goflakeid.EntityType = 1
-	EntityGenre            goflakeid.EntityType = 2
-	EntityMood             goflakeid.EntityType = 3
-	EntitySong             goflakeid.EntityType = 4
-	EntitySongPlay         goflakeid.EntityType = 5
-	EntityUserFavorite     goflakeid.EntityType = 6
-	EntityArtistFollower   goflakeid.EntityType = 7
-	EntityPlaylist         goflakeid.EntityType = 8
-	EntityPlaylistSong     goflakeid.EntityType = 9
-	EntityTip              goflakeid.EntityType = 10
-	EntityArtistMessage    goflakeid.EntityType = 11
-	EntityMessageDelivery  goflakeid.EntityType = 12
-	EntityListeningSession goflakeid.EntityType = 13
-	EntityUserPreference   goflakeid.EntityType = 14
-	EntityDailyArtistStat  goflakeid.EntityType = 15
-	EntityDailySongStat    goflakeid.EntityType = 16
+	EntityUser            goflakeid.EntityType = 0
+	EntityArtist          goflakeid.EntityType = 1
+	EntitySong            goflakeid.EntityType = 2
+	EntityPlaylist        goflakeid.EntityType = 3
+	EntityTip             goflakeid.EntityType = 4
+	EntityMessage         goflakeid.EntityType = 5
+	EntityMessageDelivery goflakeid.EntityType = 6
+	EntitySession         goflakeid.EntityType = 7
 )
 
 type BaseModel struct {
