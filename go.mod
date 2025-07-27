@@ -8,8 +8,8 @@ require (
 )
 
 require (
+	github.com/capy-engineer/go-flakeid v0.0.0-20250727065409-7ec499292bbe // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/hxuan190/go-flakeid v0.0.0-20250725173613-372bb5dd87ac // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.7.4 // indirect

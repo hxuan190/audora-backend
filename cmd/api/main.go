@@ -16,6 +16,7 @@ import (
 	userModule "music-app-backend/internal/user"
 	"music-app-backend/pkg/database"
 
+	"github.com/capy-engineer/go-flakeid"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -25,6 +26,12 @@ func main() {
 	// In Docker containers, environment variables are passed directly
 	if err := godotenv.Load(); err != nil {
 		log.Printf("No .env file found, using environment variables from container: %v", err)
+	}
+
+	IDconfig := goflakeid.NewConfig(1, 1, 0).WithAutoMachineID()
+	generator, err := goflakeid.NewGenerator(*IDconfig)
+	if err != nil {
+		log.Fatalf("Failed to initialize ID generator: %v", err)
 	}
 
 	user := os.Getenv("AUDORA_DB_USER")
@@ -58,7 +65,7 @@ func main() {
 	v1 := api.Group("v1")
 
 	// Module registration
-	userModule := userModule.NewUserModule(db.GetDB())
+	userModule := userModule.NewUserModule(db.GetDB(),generator)
 	userModule.RegisterRoutes(v1)
 
 	musicModule := musicModule.NewMusicModule(db.GetDB())

@@ -3,17 +3,21 @@ package application
 import (
 	"music-app-backend/internal/user/adapters/repository"
 	model "music-app-backend/internal/user/domain"
+	baseModel "music-app-backend/pkg/model"
 
+	goflakeid "github.com/capy-engineer/go-flakeid"
 	"github.com/google/uuid"
 )
 
 type UserService struct {
-	userRepo *repository.UserRepository
+	userRepo  *repository.UserRepository
+	generator *goflakeid.Generator
 }
 
-func NewUserService(userRepo *repository.UserRepository) *UserService {
+func NewUserService(userRepo *repository.UserRepository, generator *goflakeid.Generator) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		userRepo:  userRepo,
+		generator: generator,
 	}
 }
 
@@ -23,7 +27,13 @@ func (s *UserService) CreateUserAfterRegistration(user *model.AfterRegistrationR
 		return nil, err
 	}
 
+	baseModelInstance, err := baseModel.NewBaseModel(s.generator)
+	if err != nil {
+		return nil, err
+	}
+
 	userModel, err := s.userRepo.CreateUserAfterRegistration(&model.User{
+		BaseModel:        *baseModelInstance,
 		KratosIdentityID: identityID,
 		Email:            user.Identity.Traits.Email,
 		UserType:         user.Identity.Traits.UserType,
