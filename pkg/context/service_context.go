@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type serviceContext struct {
+type ServiceContext struct {
 	DBContext   *gorm.DB
 	Router      *gin.Engine
 	IDGenerator *goflakeid.Generator
@@ -14,10 +14,22 @@ type serviceContext struct {
 
 func NewerviceContext(DBContext *gorm.DB,
 	Router *gin.Engine,
-	IDGenerator *goflakeid.Generator) *serviceContext {
-	return &serviceContext{
+	IDGenerator *goflakeid.Generator) *ServiceContext {
+	return &ServiceContext{
 		DBContext:   DBContext,
 		Router:      Router,
 		IDGenerator: IDGenerator,
 	}
+}
+
+func (ctx ServiceContext) GetDB() *gorm.DB {
+	return ctx.DBContext
+}
+
+func (ctx ServiceContext) GetRouter() *gin.Engine {
+	return ctx.Router
+}
+
+func (ctx ServiceContext) GetIDGenerator() *goflakeid.Generator {
+	return ctx.IDGenerator
 }

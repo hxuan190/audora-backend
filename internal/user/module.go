@@ -1,13 +1,12 @@
 package user
 
 import (
+	ctx2 "music-app-backend/pkg/context"
 	"music-app-backend/internal/user/adapters/http"
 	"music-app-backend/internal/user/adapters/repository"
 	"music-app-backend/internal/user/application"
 
-	goflakeid "github.com/capy-engineer/go-flakeid"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type UserModule struct {
@@ -16,9 +15,9 @@ type UserModule struct {
 	Handler    *http.UserHandler
 }
 
-func NewUserModule(db *gorm.DB, generator *goflakeid.Generator) *UserModule {
-	userRepo := repository.NewUserRepository(db)
-	userService := application.NewUserService(userRepo, generator)
+func NewUserModule(serviceContext *ctx2.ServiceContext) *UserModule {
+	userRepo := repository.NewUserRepository(serviceContext.GetDB())
+	userService := application.NewUserService(userRepo, serviceContext.GetIDGenerator())
 	userHandler := http.NewUserHandler(userService)
 
 	return &UserModule{

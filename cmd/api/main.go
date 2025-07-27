@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	ctx2 "music-app-backend/pkg/context"
 	analyticsModule "music-app-backend/internal/analytics"
 	musicModule "music-app-backend/internal/music"
 	playbackModule "music-app-backend/internal/playback"
@@ -16,7 +17,7 @@ import (
 	userModule "music-app-backend/internal/user"
 	"music-app-backend/pkg/database"
 
-	"github.com/capy-engineer/go-flakeid"
+	goflakeid "github.com/capy-engineer/go-flakeid"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -64,8 +65,11 @@ func main() {
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
+	// Init Service Context
+	serviceContext := ctx2.NewerviceContext(db.GetDB(), router, generator)
+
 	// Module registration
-	userModule := userModule.NewUserModule(db.GetDB(),generator)
+	userModule := userModule.NewUserModule(serviceContext)
 	userModule.RegisterRoutes(v1)
 
 	musicModule := musicModule.NewMusicModule(db.GetDB())
