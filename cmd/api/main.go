@@ -69,11 +69,11 @@ func main() {
 	serviceContext := ctx2.NewerviceContext(db.GetDB(), router, generator)
 
 	// Module registration
-	userModule := userModule.NewUserModule(serviceContext)
-	userModule.RegisterRoutes(v1)
-
-	musicModule := musicModule.NewMusicModule(db.GetDB())
+	musicModule := musicModule.NewMusicModule(db.GetDB(), serviceContext)
 	musicModule.RegisterRoutes(v1)
+
+	userModule := userModule.NewUserModule(serviceContext, musicModule.Service)
+	userModule.RegisterRoutes(v1)
 
 	analyticsModule := analyticsModule.NewAnalyticsModule(db.GetDB())
 	analyticsModule.RegisterRoutes(v1)

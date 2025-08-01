@@ -1,6 +1,7 @@
 package music
 
 import (
+	ctx2 "music-app-backend/pkg/context"
 	"music-app-backend/internal/music/adapters/repository"
 	"music-app-backend/internal/music/application"
 
@@ -9,13 +10,13 @@ import (
 )
 
 type MusicModule struct {
-	Repository *repository.MusicRepository
+	Repository repository.IMusicRepository
 	Service    *application.MusicService
 }
 
-func NewMusicModule(db *gorm.DB) *MusicModule {
+func NewMusicModule(db *gorm.DB, serviceContext *ctx2.ServiceContext) *MusicModule {
 	musicRepo := repository.NewMusicRepository(db)
-	musicService := application.NewMusicService(musicRepo)
+	musicService := application.NewMusicService(musicRepo, serviceContext.GetIDGenerator())
 
 	return &MusicModule{
 		Repository: musicRepo,

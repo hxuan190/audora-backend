@@ -1,6 +1,9 @@
 package application
 
 import (
+	"fmt"
+	musicModuleSvc "music-app-backend/internal/music/application"
+	musicModel "music-app-backend/internal/music/domain"
 	"music-app-backend/internal/user/adapters/repository"
 	model "music-app-backend/internal/user/domain"
 	baseModel "music-app-backend/pkg/model"
@@ -10,14 +13,16 @@ import (
 )
 
 type UserService struct {
-	userRepo  *repository.UserRepository
-	generator *goflakeid.Generator
+	userRepo      *repository.UserRepository
+	generator     *goflakeid.Generator
+	artistService musicModuleSvc.IMusicService
 }
 
-func NewUserService(userRepo *repository.UserRepository, generator *goflakeid.Generator) *UserService {
+func NewUserService(userRepo *repository.UserRepository, generator *goflakeid.Generator, artistService musicModuleSvc.IMusicService) *UserService {
 	return &UserService{
-		userRepo:  userRepo,
-		generator: generator,
+		userRepo:      userRepo,
+		generator:     generator,
+		artistService: artistService,
 	}
 }
 
@@ -45,6 +50,21 @@ func (s *UserService) CreateUserAfterRegistration(user *model.AfterRegistrationR
 
 	if err != nil {
 		return nil, err
+	}
+
+	if user.Identity.Traits.UserType == "artist" {
+		artist := musicModel.CreateArtistDTO{
+			UserID:     userModel.ID,
+			ArtistName: *user.Identity.Traits.ArtistName,
+		}
+
+		fmt.Println("artist", artist)
+
+		err = s.artistService.InsertArtist(&artist)
+		fmt.Println("err", err)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &userModel.ID, nil
