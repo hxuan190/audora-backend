@@ -90,6 +90,12 @@
         "display_name",
         "user_type"
       ],
+      "allOf": [
+        {
+          "if": { "properties": { "user_type": { "const": "artist" } } },
+          "then": { "required": ["artist_name"] }
+        }
+      ],
       "additionalProperties": false
     }
   }

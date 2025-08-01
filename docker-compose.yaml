@@ -118,7 +118,7 @@ services:
       SELFSERVICE_FLOWS_LOGOUT_REDIRECT_URL: ${AUDORA_APP_URL:-http://localhost:3000}
       
       # Webhooks
-      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: http://audora-api:8080/api/internal/hooks/after-registration
+      SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: http://audora-api:8080/api/v1/internal/hooks/after-registration
       
       # Secrets (Change these!)
       SECRETS_COOKIE: ${KRATOS_SECRET_COOKIE:-63f4945d921d599f27ae4fdf5bada3f1}
