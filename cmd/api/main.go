@@ -9,12 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	ctx2 "music-app-backend/pkg/context"
 	analyticsModule "music-app-backend/internal/analytics"
+	authModule "music-app-backend/internal/auth"
 	musicModule "music-app-backend/internal/music"
 	playbackModule "music-app-backend/internal/playback"
 	socialModule "music-app-backend/internal/social"
 	userModule "music-app-backend/internal/user"
+	ctx2 "music-app-backend/pkg/context"
 	"music-app-backend/pkg/database"
 
 	goflakeid "github.com/capy-engineer/go-flakeid"
@@ -69,6 +70,9 @@ func main() {
 	serviceContext := ctx2.NewerviceContext(db.GetDB(), router, generator)
 
 	// Module registration
+	authModule := authModule.NewAuthModule(db.GetDB())
+	authModule.RegisterRoutes(v1)
+
 	musicModule := musicModule.NewMusicModule(db.GetDB(), serviceContext)
 	musicModule.RegisterRoutes(v1)
 
