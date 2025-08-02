@@ -238,7 +238,7 @@
 
 ### **Backend Requirements**
 - **Framework**: Golang with Gin
-- **Database**: ostgreSQL
+- **Database**: PostgreSQL
 - **Audio Storage**: AWS S3 with CloudFront CDN for production | MinIO for development
 - **Real-time**: WebSocket for live features
 - **Payments**: Stripe integration
