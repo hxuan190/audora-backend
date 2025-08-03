@@ -1,3 +1,4 @@
+// pkg/jwt/service.go - UPDATED with expired token parsing
 package jwt
 
 import (
@@ -73,26 +74,25 @@ func (j *JWTService) ValidateToken(tokenString string) (*Claims, error) {
 	return nil, errors.New("invalid token")
 }
 
-func (j *JWTService) RefreshToken(claims *Claims) (string, error) {
-	// Create new claims with updated expiration
-	now := time.Now()
-	newClaims := &Claims{
-		UserID:           claims.UserID,
-		KratosIdentityID: claims.KratosIdentityID,
-		Email:            claims.Email,
-		UserType:         claims.UserType,
-		DisplayName:      claims.DisplayName,
-		IsActive:         claims.IsActive,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    j.issuer,
-			Subject:   claims.Subject,
-			Audience:  claims.Audience,
-			ExpiresAt: jwt.NewNumericDate(now.Add(j.tokenLifetime)),
-			NotBefore: jwt.NewNumericDate(now),
-			IssuedAt:  jwt.NewNumericDate(now),
-		},
+// NEW: ValidateTokenIgnoringExpiry for refresh token validation
+func (j *JWTService) ValidateTokenIgnoringExpiry(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
+		}
+		return j.secretKey, nil
+	}, jwt.WithoutClaimsValidation()) // This ignores expiry validation
+
+	if err != nil {
+		return nil, err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, newClaims)
-	return token.SignedString(j.secretKey)
+	if claims, ok := token.Claims.(*Claims); ok {
+		// Still validate the signature and basic structure, just not expiry
+		return claims, nil
+	}
+
+	return nil, errors.New("invalid token structure")
 }
+
+// REMOVED: The insecure RefreshToken method that didn't validate with Kratos

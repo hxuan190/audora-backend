@@ -1,4 +1,4 @@
-// internal/auth/adapters/http/handler.go
+// internal/auth/adapters/http/handler.go - FIXED VERSION
 package http
 
 import (
@@ -19,8 +19,10 @@ type LoginRequest struct {
 	SessionToken string `json:"session_token" binding:"required"`
 }
 
+// UPDATED: RefreshTokenRequest now requires session token
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
+	SessionToken string `json:"session_token" binding:"required"` // NEW: Required for security
 }
 
 func NewAuthHandler(authService *application.AuthService) *AuthHandler {
@@ -78,7 +80,7 @@ func (h *AuthHandler) LoginWithCookie(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-// RefreshToken refreshes an existing JWT token
+// FIXED: RefreshToken now validates with Kratos session
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var request RefreshTokenRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -86,7 +88,35 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.RefreshToken(request.RefreshToken)
+	// SECURITY FIX: Pass both the current JWT and session token for validation
+	response, err := h.authService.RefreshToken(request.RefreshToken, request.SessionToken)
+	if err != nil {
+		h.HandleError(c, err)
+		return
+	}
+
+	jsonResponse.ResponseOK(c, response)
+}
+
+// Alternative: RefreshTokenWithCookie for cookie-based session validation
+func (h *AuthHandler) RefreshTokenWithCookie(c *gin.Context) {
+	// Extract refresh token from request body
+	var refreshRequest struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&refreshRequest); err != nil {
+		jsonResponse.ResponseBadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	// Extract session token from cookie
+	sessionToken, err := c.Cookie("ory_kratos_session")
+	if err != nil {
+		jsonResponse.ResponseBadRequest(c, "Session cookie required for refresh")
+		return
+	}
+
+	response, err := h.authService.RefreshToken(refreshRequest.RefreshToken, sessionToken)
 	if err != nil {
 		h.HandleError(c, err)
 		return
