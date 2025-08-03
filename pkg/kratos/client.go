@@ -17,17 +17,17 @@ type Session struct {
 }
 
 type Identity struct {
-	ID           string                 `json:"id"`
-	SchemaID     string                 `json:"schema_id"`
-	SchemaURL    string                 `json:"schema_url"`
-	State        string                 `json:"state"`
-	StateChangedAt time.Time            `json:"state_changed_at"`
-	Traits       map[string]interface{} `json:"traits"`
-	VerifiableAddresses []VerifiableAddress `json:"verifiable_addresses"`
-	RecoveryAddresses   []RecoveryAddress   `json:"recovery_addresses"`
-	MetadataPublic      json.RawMessage     `json:"metadata_public"`
-	CreatedAt           time.Time           `json:"created_at"`
-	UpdatedAt           time.Time           `json:"updated_at"`
+	ID                  string                 `json:"id"`
+	SchemaID            string                 `json:"schema_id"`
+	SchemaURL           string                 `json:"schema_url"`
+	State               string                 `json:"state"`
+	StateChangedAt      time.Time              `json:"state_changed_at"`
+	Traits              map[string]interface{} `json:"traits"`
+	VerifiableAddresses []VerifiableAddress    `json:"verifiable_addresses"`
+	RecoveryAddresses   []RecoveryAddress      `json:"recovery_addresses"`
+	MetadataPublic      json.RawMessage        `json:"metadata_public"`
+	CreatedAt           time.Time              `json:"created_at"`
+	UpdatedAt           time.Time              `json:"updated_at"`
 }
 
 type VerifiableAddress struct {
@@ -92,9 +92,10 @@ func (c *Client) VerifySession(sessionToken string) (*Session, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add session cookie or authorization header
-	req.Header.Set("Cookie", fmt.Sprintf("ory_kratos_session=%s", sessionToken))
+	req.Header.Set("X-Session-Token", sessionToken)
+
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {

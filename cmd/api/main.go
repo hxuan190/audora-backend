@@ -36,26 +36,12 @@ func main() {
 		log.Fatalf("Failed to initialize ID generator: %v", err)
 	}
 
-	user := os.Getenv("AUDORA_DB_USER")
-	password := os.Getenv("AUDORA_DB_PASSWORD")
-	dbname := os.Getenv("AUDORA_DB_NAME")
-	host := os.Getenv("AUDORA_DB_HOST")
-	port := os.Getenv("AUDORA_DB_PORT")
-
-	// Use default values if not set
-	if host == "" {
-		host = "localhost"
-	}
-	if port == "" {
-		port = "5432"
-	}
-
 	config := database.DefaultConfig()
-	config.Host = host
-	config.Port = port
-	config.User = user
-	config.Password = password
-	config.DBName = dbname
+	config.Host = os.Getenv("AUDORA_DB_HOST")
+	config.Port = os.Getenv("AUDORA_DB_PORT")
+	config.User = os.Getenv("AUDORA_DB_USER")
+	config.Password = os.Getenv("AUDORA_DB_PASSWORD")
+	config.DBName = os.Getenv("AUDORA_DB_NAME")
 
 	db, err := database.NewWithConfig(config)
 	if err != nil {
