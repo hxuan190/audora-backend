@@ -70,7 +70,7 @@ func (s *AuthService) VerifySessionAndIssueJWT(sessionToken string) (*LoginRespo
 	}
 
 	// Step 4: Update last login time
-	now := time.Now().Unix()
+	now := time.Now()
 	user.LastLoginAt = &now
 	if err := s.authRepo.UpdateUserLastLogin(user); err != nil {
 		// Log error but don't fail the login
