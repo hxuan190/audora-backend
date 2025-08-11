@@ -46,12 +46,18 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # Security settings
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+      MINIO_SERVER_URL: http://localhost:9000
+      # Console branding
+      MINIO_BROWSER_LOGIN_ANIMATION: off
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000"   # API port
+      - "9001:9001"   # Console port
     volumes:
       - minio_data:/data
-      - ./scripts/setup-minio.sh:/setup-minio.sh
+      # Mount additional MinIO configuration if needed
+      - ./minio-config:/etc/minio
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
