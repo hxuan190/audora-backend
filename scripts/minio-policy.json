@@ -2,6 +2,24 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "AllowSignedURLUploads",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:PutObject",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts"
+      ],
+      "Resource": [
+        "arn:aws:s3:::audora-tracks/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "s3:signatureAge": "900"
+        }
+      }
+    },
+    {
       "Sid": "AllowCloudFrontRead",
       "Effect": "Allow",
       "Principal": "*",
@@ -18,15 +36,18 @@
       }
     },
     {
-      "Sid": "AllowBucketListing",
+      "Sid": "AllowPipelineAccess",
       "Effect": "Allow",
-      "Principal": "*",
+      "Principal": {
+        "AWS": "arn:aws:iam::minio:user/pipeline"
+      },
       "Action": [
-        "s3:ListBucket",
-        "s3:GetBucketLocation"
+        "s3:GetObject",
+        "s3:PutObject"
       ],
       "Resource": [
-        "arn:aws:s3:::audora"
+        "arn:aws:s3:::audora-tracks/*",
+        "arn:aws:s3:::processed-tracks/*"
       ]
     }
   ]
