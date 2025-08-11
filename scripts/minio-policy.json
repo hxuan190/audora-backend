@@ -1,0 +1,59 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowSignedURLUploads",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts"
+      ],
+      "Resource": [
+        "arn:aws:s3:::audora/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "s3:signatureAge": "86400"
+        }
+      }
+    },
+    {
+      "Sid": "AllowCloudFrontRead",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion"
+      ],
+      "Resource": [
+        "arn:aws:s3:::audora/*"
+      ]
+    },
+    {
+      "Sid": "AllowBucketListing",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::audora"
+      ]
+    },
+    {
+      "Sid": "AllowPublicRead",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::audora/public/*"
+      ]
+    }
+  ]
+}

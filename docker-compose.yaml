@@ -73,6 +73,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
       - ./scripts/setup-minio.sh:/setup-minio.sh
+      - ./scripts/minio-policy.json:/minio-policy.json
     command: sh /setup-minio.sh
     networks:
       - audora-network

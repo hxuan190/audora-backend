@@ -1,9 +1,9 @@
 package music
 
 import (
-	ctx2 "music-app-backend/pkg/context"
 	"music-app-backend/internal/music/adapters/repository"
 	"music-app-backend/internal/music/application"
+	ctx2 "music-app-backend/pkg/context"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -24,4 +24,15 @@ func NewMusicModule(db *gorm.DB, serviceContext *ctx2.ServiceContext) *MusicModu
 	}
 }
 
-func (s *MusicModule) RegisterRoutes(router *gin.RouterGroup) {}
+func (s *MusicModule) RegisterRoutes(router *gin.RouterGroup) {
+	uploadRouter := router.Group("/upload")
+	{
+		uploadRouter.POST("/initiate")
+		uploadRouter.POST("/complete")
+		uploadRouter.GET("/status/{job_id}")
+	}
+	streamRouter := router.Group("/stream")
+	{
+		streamRouter.GET("/{song_id}")
+	}
+}

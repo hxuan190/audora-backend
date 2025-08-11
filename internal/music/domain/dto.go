@@ -12,3 +12,6 @@ type CreateArtistDTO struct {
 	TwitterURL      *string `json:"twitter_url"`
 	YoutubeURL      *string `json:"youtube_url"`
 }
+
+type InitiateUploadRequest struct {
+}

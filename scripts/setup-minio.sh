@@ -15,6 +15,10 @@ until mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MI
   sleep 2
 done
 
+# Create main audora bucket (for general uploads, user content, etc.)
+echo "Creating audora bucket..."
+mc mb myminio/audora 2>/dev/null || echo "Bucket already exists"
+
 # Create audora-tracks bucket for original files (pipeline input)
 echo "Creating audora-tracks bucket..."
 mc mb myminio/audora-tracks 2>/dev/null || echo "Bucket already exists"
@@ -23,9 +27,24 @@ mc mb myminio/audora-tracks 2>/dev/null || echo "Bucket already exists"
 echo "Creating processed-tracks bucket..."
 mc mb myminio/processed-tracks 2>/dev/null || echo "Bucket already exists"
 
-# Set public read policy for audora bucket
+# Copy policy file to container and apply it
+echo "Copying policy file..."
+cp /setup-minio.sh /tmp/ 2>/dev/null || true
+if [ -f "/minio-policy.json" ]; then
+    echo "Applying custom policy to audora bucket..."
+    mc admin policy create myminio audora-policy /minio-policy.json
+    mc admin policy attach myminio audora-policy --user minioadmin
+else
+    echo "Policy file not found, using default policies..."
+fi
+
+# Set public read policy for audora bucket (with public/ prefix for public assets)
 echo "Setting public read policy for audora bucket..."
-mc anonymous set download myminio/audora
+mc anonymous set download myminio/audora/public/
+
+# Set public read policy for audora-tracks bucket (for streaming access)
+echo "Setting public read policy for audora-tracks bucket..."
+mc anonymous set download myminio/audora-tracks
 
 # Set public read policy for processed-tracks bucket (for streaming access)
 echo "Setting public read policy for processed-tracks bucket..."
