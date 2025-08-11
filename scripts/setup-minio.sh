@@ -15,12 +15,20 @@ until mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MI
   sleep 2
 done
 
-# Create audora bucket (ignore if already exists)
-echo "Creating audora bucket..."
-mc mb myminio/audora 2>/dev/null || echo "Bucket already exists"
+# Create audora-tracks bucket for original files (pipeline input)
+echo "Creating audora-tracks bucket..."
+mc mb myminio/audora-tracks 2>/dev/null || echo "Bucket already exists"
+
+# Create processed-tracks bucket for processed files (pipeline output, used for streaming)
+echo "Creating processed-tracks bucket..."
+mc mb myminio/processed-tracks 2>/dev/null || echo "Bucket already exists"
 
 # Set public read policy for audora bucket
 echo "Setting public read policy for audora bucket..."
 mc anonymous set download myminio/audora
+
+# Set public read policy for processed-tracks bucket (for streaming access)
+echo "Setting public read policy for processed-tracks bucket..."
+mc anonymous set download myminio/processed-tracks
 
 echo "MinIO setup completed successfully!" 
