@@ -20,7 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UploadHandler struct {
+type MusicHandler struct {
 	musicService   *application.MusicService
 	storageService *storage.MinIOService
 	celeryClient   *queue.CeleryClient
@@ -108,15 +108,15 @@ type ProcessingProgress struct {
 	ETA         *time.Time `json:"eta,omitempty"`
 }
 
-func NewUploadHandler(
+func NewMusicHandler(
 	musicService *application.MusicService, 
 	storageService *storage.MinIOService, 
 	redisClient *redis.Client,
 	generator *goflakeid.Generator,
-) *UploadHandler {
+) *MusicHandler {
 	celeryClient := queue.NewCeleryClient(redisClient)
-	
-	return &UploadHandler{
+
+	return &MusicHandler{
 		musicService:   musicService,
 		storageService: storageService,
 		celeryClient:   celeryClient,
@@ -124,7 +124,7 @@ func NewUploadHandler(
 	}
 }
 
-func (h *UploadHandler) HandleError(c *gin.Context, err error) bool {
+func (h *MusicHandler) HandleError(c *gin.Context, err error) bool {
 	if err == nil {
 		return false
 	}
@@ -138,7 +138,7 @@ func (h *UploadHandler) HandleError(c *gin.Context, err error) bool {
 	return true
 }
 
-func (h *UploadHandler) InitiateUpload(c *gin.Context) {
+func (h *MusicHandler) InitiateUpload(c *gin.Context) {
 	request := &InitiateUploadRequest{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		jsonResponse.ResponseBadRequest(c, "Invalid request: "+err.Error())
@@ -213,7 +213,7 @@ func (h *UploadHandler) InitiateUpload(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-func (h *UploadHandler) CompleteUpload(c *gin.Context) {
+func (h *MusicHandler) CompleteUpload(c *gin.Context) {
 	request := &CompleteUploadRequest{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		jsonResponse.ResponseBadRequest(c, "Invalid request: "+err.Error())
@@ -361,7 +361,7 @@ func (h *UploadHandler) CompleteUpload(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-func (h *UploadHandler) GetUploadStatus(c *gin.Context) {
+func (h *MusicHandler) GetUploadStatus(c *gin.Context) {
 	uploadID := c.Param("upload_id")
 	if uploadID == "" {
 		jsonResponse.ResponseBadRequest(c, "Upload ID is required")
@@ -389,7 +389,7 @@ func (h *UploadHandler) GetUploadStatus(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-func (h *UploadHandler) GetProcessingStatus(c *gin.Context) {
+func (h *MusicHandler) GetProcessingStatus(c *gin.Context) {
 	taskID := c.Param("task_id")
 	if taskID == "" {
 		jsonResponse.ResponseBadRequest(c, "Task ID is required")
@@ -467,7 +467,7 @@ func (h *UploadHandler) GetProcessingStatus(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-func (h *UploadHandler) GetStreamingURL(c *gin.Context) {
+func (h *MusicHandler) GetStreamingURL(c *gin.Context) {
 	songID := c.Param("song_id")
 	if songID == "" {
 		jsonResponse.ResponseBadRequest(c, "Song ID is required")
@@ -512,7 +512,7 @@ func (h *UploadHandler) GetStreamingURL(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-func (h *UploadHandler) ProcessingCallback(c *gin.Context) {
+func (h *MusicHandler) ProcessingCallback(c *gin.Context) {
 	songID := c.Param("song_id")
 	if songID == "" {
 		jsonResponse.ResponseBadRequest(c, "Song ID is required")
@@ -540,7 +540,7 @@ func (h *UploadHandler) ProcessingCallback(c *gin.Context) {
 
 // Helper methods
 
-func (h *UploadHandler) canAccessFormat(userTier, format string) bool {
+func (h *MusicHandler) canAccessFormat(userTier, format string) bool {
 	switch userTier {
 	case "free":
 		return format == "mp3_320"
@@ -553,7 +553,7 @@ func (h *UploadHandler) canAccessFormat(userTier, format string) bool {
 	}
 }
 
-func (h *UploadHandler) isValidAudioFormat(filename string) bool {
+func (h *MusicHandler) isValidAudioFormat(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	validFormats := []string{".flac", ".wav", ".aiff", ".mp3"}
 
@@ -565,19 +565,19 @@ func (h *UploadHandler) isValidAudioFormat(filename string) bool {
 	return false
 }
 
-func (h *UploadHandler) generateUploadID(artistID uint64, filename string) string {
+func (h *MusicHandler) generateUploadID(artistID uint64, filename string) string {
 	timestamp := time.Now().Unix()
 	return fmt.Sprintf("upload_%d_%d_%s", artistID, timestamp, h.sanitizeFilename(filename))
 }
 
-func (h *UploadHandler) sanitizeFilename(filename string) string {
+func (h *MusicHandler) sanitizeFilename(filename string) string {
 	// Remove extension and special characters, keep only alphanumeric and hyphens
 	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 	name = strings.ReplaceAll(name, " ", "-")
 	return strings.ToLower(name)
 }
 
-func (h *UploadHandler) extractObjectPathFromURL(fileURL string) string {
+func (h *MusicHandler) extractObjectPathFromURL(fileURL string) string {
 	// Extract object path from MinIO URL
 	// This is a simplified implementation
 	parts := strings.Split(fileURL, "/")
@@ -587,7 +587,7 @@ func (h *UploadHandler) extractObjectPathFromURL(fileURL string) string {
 	return ""
 }
 
-func (h *UploadHandler) getFormatExtension(format string) string {
+func (h *MusicHandler) getFormatExtension(format string) string {
 	switch format {
 	case "mp3_320", "mp3_256", "mp3_192":
 		return "mp3"
@@ -598,7 +598,7 @@ func (h *UploadHandler) getFormatExtension(format string) string {
 	}
 }
 
-func (h *UploadHandler) getFormatFromFilename(filename string) string {
+func (h *MusicHandler) getFormatFromFilename(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
 	case ".mp3":
@@ -614,7 +614,7 @@ func (h *UploadHandler) getFormatFromFilename(filename string) string {
 	}
 }
 
-func (h *UploadHandler) getContentTypeFromFilename(filename string) string {
+func (h *MusicHandler) getContentTypeFromFilename(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
 	case ".mp3":
