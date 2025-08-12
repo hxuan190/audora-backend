@@ -11,6 +11,7 @@ import (
 	"music-app-backend/pkg/redis"
 	"music-app-backend/pkg/storage"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ type CompleteUploadRequest struct {
 	MoodID  *uint64 `json:"mood_id" binding:"required"`
 
 	// Optional song metadata
-	Description      string                       `json:"description"`
+	Description      string                        `json:"description"`
 	ProcessingConfig *AudioProcessingConfigRequest `json:"processing_config,omitempty"`
 }
 
@@ -91,26 +92,26 @@ type UploadSummary struct {
 }
 
 type ProcessingStatusResponse struct {
-	SongID      uint64                       `json:"song_id"`
-	TaskID      string                       `json:"task_id"`
-	Status      string                       `json:"status"` // "PENDING", "STARTED", "SUCCESS", "FAILURE"
-	Progress    *ProcessingProgress          `json:"progress,omitempty"`
-	Result      *queue.AudioProcessingResult `json:"result,omitempty"`
-	Error       string                       `json:"error,omitempty"`
-	CreatedAt   time.Time                    `json:"created_at"`
-	UpdatedAt   time.Time                    `json:"updated_at"`
+	SongID    uint64                       `json:"song_id"`
+	TaskID    string                       `json:"task_id"`
+	Status    string                       `json:"status"` // "PENDING", "STARTED", "SUCCESS", "FAILURE"
+	Progress  *ProcessingProgress          `json:"progress,omitempty"`
+	Result    *queue.AudioProcessingResult `json:"result,omitempty"`
+	Error     string                       `json:"error,omitempty"`
+	CreatedAt time.Time                    `json:"created_at"`
+	UpdatedAt time.Time                    `json:"updated_at"`
 }
 
 type ProcessingProgress struct {
-	Stage       string  `json:"stage"`       // "downloading", "validating", "normalizing", "transcoding", "uploading"
-	Percentage  float64 `json:"percentage"`  // 0.0 to 100.0
-	CurrentStep string  `json:"current_step"`
+	Stage       string     `json:"stage"`      // "downloading", "validating", "normalizing", "transcoding", "uploading"
+	Percentage  float64    `json:"percentage"` // 0.0 to 100.0
+	CurrentStep string     `json:"current_step"`
 	ETA         *time.Time `json:"eta,omitempty"`
 }
 
 func NewMusicHandler(
-	musicService *application.MusicService, 
-	storageService *storage.MinIOService, 
+	musicService *application.MusicService,
+	storageService *storage.MinIOService,
 	redisClient *redis.Client,
 	generator *goflakeid.Generator,
 ) *MusicHandler {
@@ -170,9 +171,9 @@ func (h *MusicHandler) InitiateUpload(c *gin.Context) {
 
 	// Get presigned upload URL
 	presignedURL, err := h.storageService.GetPresignedUploadURL(
-		c.Request.Context(), 
-		objectPath, 
-		storage.BucketTypeTracks, 
+		c.Request.Context(),
+		objectPath,
+		storage.BucketTypeTracks,
 		15*time.Minute,
 	)
 	if err != nil {
@@ -434,7 +435,7 @@ func (h *MusicHandler) GetProcessingStatus(c *gin.Context) {
 			jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to parse processing result: %v", err))
 			return
 		}
-		
+
 		response.Result = audioResult
 		response.Progress = &ProcessingProgress{
 			Stage:       "completed",
@@ -442,8 +443,7 @@ func (h *MusicHandler) GetProcessingStatus(c *gin.Context) {
 			CurrentStep: "Processing completed successfully",
 		}
 
-		// TODO: Update song record with processing results
-		// h.updateSongWithProcessingResults(audioResult)
+		// Note: Song record is updated via ProcessingCallback webhook when processing completes
 
 	case "FAILURE":
 		response.Error = "Processing failed"
@@ -525,17 +525,62 @@ func (h *MusicHandler) ProcessingCallback(c *gin.Context) {
 		return
 	}
 
-	// TODO: Update song record with processing results
-	// This would include:
-	// - Update processing_status to "completed" or "failed"
-	// - Store audio analysis results
-	// - Update duration_seconds
-	// - Set is_processed = true
-	// - Store processed file URLs
+	// Convert songID string to uint64
+	songIDUint, err := h.parseSongID(songID)
+	if err != nil {
+		jsonResponse.ResponseBadRequest(c, "Invalid song ID format")
+		return
+	}
 
-	fmt.Printf("Processing callback received for song %s: %+v\n", songID, callbackData)
+	// Verify the song exists and get current status
+	song, err := h.musicService.GetSongByID(c.Request.Context(), songIDUint)
+	if err != nil {
+		jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to get song: %v", err))
+		return
+	}
 
-	jsonResponse.ResponseOK(c, map[string]string{"status": "callback_received"})
+	if song == nil {
+		jsonResponse.ResponseNotFound(c)
+		return
+	}
+
+	// Update song record with processing results
+	err = h.musicService.UpdateSongWithProcessingResults(c.Request.Context(), songIDUint, &callbackData)
+	if err != nil {
+		jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to update song with processing results: %v", err))
+		return
+	}
+
+	// Log the processing result for debugging
+	if callbackData.Success {
+		fmt.Printf("Processing completed successfully for song %s. Duration: %.2fs, Quality Score: %.2f\n",
+			songID, callbackData.AudioAnalysis.Duration, callbackData.QualityScore)
+
+		// Log processed formats
+		for _, format := range callbackData.ProcessedFormats {
+			fmt.Printf("Generated format: %s, Size: %d bytes, Bitrate: %d\n",
+				format.Format, format.FileSize, format.Bitrate)
+		}
+	} else {
+		fmt.Printf("Processing failed for song %s: %s\n", songID, callbackData.Error)
+	}
+
+	response := map[string]interface{}{
+		"status":             "callback_processed",
+		"song_id":            songIDUint,
+		"processing_success": callbackData.Success,
+	}
+
+	if callbackData.Success {
+		response["message"] = "Song processing completed successfully"
+		response["quality_score"] = callbackData.QualityScore
+		response["processed_formats"] = len(callbackData.ProcessedFormats)
+	} else {
+		response["message"] = "Song processing failed"
+		response["error"] = callbackData.Error
+	}
+
+	jsonResponse.ResponseOK(c, response)
 }
 
 // Helper methods
@@ -632,4 +677,8 @@ func (h *MusicHandler) getContentTypeFromFilename(filename string) string {
 
 func timePtr(t time.Time) *time.Time {
 	return &t
+}
+
+func (h *MusicHandler) parseSongID(songID string) (uint64, error) {
+	return strconv.ParseUint(songID, 10, 64)
 }
