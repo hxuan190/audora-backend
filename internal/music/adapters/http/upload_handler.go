@@ -1,3 +1,4 @@
+// internal/music/adapters/http/upload_handler.go - Updated with Celery integration
 package http
 
 import (
@@ -6,6 +7,8 @@ import (
 	model "music-app-backend/internal/music/domain"
 	appError "music-app-backend/pkg/error"
 	jsonResponse "music-app-backend/pkg/json"
+	"music-app-backend/pkg/queue"
+	"music-app-backend/pkg/redis"
 	"music-app-backend/pkg/storage"
 	"path/filepath"
 	"strings"
@@ -20,6 +23,7 @@ import (
 type UploadHandler struct {
 	musicService   *application.MusicService
 	storageService *storage.MinIOService
+	celeryClient   *queue.CeleryClient
 	generator      *goflakeid.Generator
 }
 
@@ -56,45 +60,28 @@ type CompleteUploadRequest struct {
 	GenreID *uint64 `json:"genre_id" binding:"required"`
 	MoodID  *uint64 `json:"mood_id" binding:"required"`
 
-	// Song metadata
-	Description string `json:"description"`
+	// Optional song metadata
+	Description      string                       `json:"description"`
+	ProcessingConfig *AudioProcessingConfigRequest `json:"processing_config,omitempty"`
 }
 
-type ProcessingIntensity string
-
-const (
-	ProcessingConservative ProcessingIntensity = "conservative" // Gentle processing, preserve dynamics
-	ProcessingStandard     ProcessingIntensity = "standard"     // Balanced optimization
-	ProcessingAggressive   ProcessingIntensity = "aggressive"   // Maximum loudness/presence
-)
-
-type CollaboratorRequest struct {
-	ArtistID     *uint64  `json:"artist_id,omitempty"`     // If they're on the platform
-	Name         string   `json:"name" binding:"required"` // Display name
-	Role         string   `json:"role" binding:"required"` // "vocalist", "producer", "writer", etc.
-	Email        *string  `json:"email,omitempty"`         // For future invitation
-	SplitPercent *float64 `json:"split_percent,omitempty"` // Revenue split percentage
-}
-
-type CreditRequest struct {
-	Name string `json:"name" binding:"required"`
-	Role string `json:"role" binding:"required"` // "Mixed by", "Mastered by", "Recorded at", etc.
-}
-
-type ProcessingJob struct {
-	SongID           uint64 `json:"song_id"`
-	ArtistID         uint64 `json:"artist_id"`
-	SourceObjectPath string `json:"source_object_path"`
+type AudioProcessingConfigRequest struct {
+	TargetLUFS           *float64 `json:"target_lufs,omitempty"`            // -14.0 default
+	GenerateFormats      []string `json:"generate_formats,omitempty"`       // ["mp3_320", "flac_cd", "flac_hires"]
+	QualityEnhancement   *bool    `json:"quality_enhancement,omitempty"`    // Apply additional processing
+	PreserveDynamicRange *bool    `json:"preserve_dynamic_range,omitempty"` // Avoid over-compression
+	ProcessingIntensity  string   `json:"processing_intensity,omitempty"`   // "conservative", "standard", "aggressive"
 }
 
 type CompleteUploadResponse struct {
 	SongID              uint64         `json:"song_id"`
 	Status              string         `json:"status"`
 	Message             string         `json:"message"`
-	ProcessingJobID     string         `json:"processing_job_id"`
+	ProcessingTaskID    string         `json:"processing_task_id"`
 	EstimatedCompletion time.Time      `json:"estimated_completion"`
 	UploadSummary       *UploadSummary `json:"upload_summary"`
 	NextSteps           []string       `json:"next_steps"`
+	TrackingURL         string         `json:"tracking_url"`
 }
 
 type UploadSummary struct {
@@ -103,10 +90,36 @@ type UploadSummary struct {
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 
-func NewUploadHandler(musicService *application.MusicService, storageService *storage.MinIOService, generator *goflakeid.Generator) *UploadHandler {
+type ProcessingStatusResponse struct {
+	SongID      uint64                       `json:"song_id"`
+	TaskID      string                       `json:"task_id"`
+	Status      string                       `json:"status"` // "PENDING", "STARTED", "SUCCESS", "FAILURE"
+	Progress    *ProcessingProgress          `json:"progress,omitempty"`
+	Result      *queue.AudioProcessingResult `json:"result,omitempty"`
+	Error       string                       `json:"error,omitempty"`
+	CreatedAt   time.Time                    `json:"created_at"`
+	UpdatedAt   time.Time                    `json:"updated_at"`
+}
+
+type ProcessingProgress struct {
+	Stage       string  `json:"stage"`       // "downloading", "validating", "normalizing", "transcoding", "uploading"
+	Percentage  float64 `json:"percentage"`  // 0.0 to 100.0
+	CurrentStep string  `json:"current_step"`
+	ETA         *time.Time `json:"eta,omitempty"`
+}
+
+func NewUploadHandler(
+	musicService *application.MusicService, 
+	storageService *storage.MinIOService, 
+	redisClient *redis.Client,
+	generator *goflakeid.Generator,
+) *UploadHandler {
+	celeryClient := queue.NewCeleryClient(redisClient)
+	
 	return &UploadHandler{
 		musicService:   musicService,
 		storageService: storageService,
+		celeryClient:   celeryClient,
 		generator:      generator,
 	}
 }
@@ -138,27 +151,36 @@ func (h *UploadHandler) InitiateUpload(c *gin.Context) {
 		return
 	}
 
+	// Validate audio format
 	if !h.isValidAudioFormat(request.Filename) {
 		jsonResponse.ResponseBadRequest(c, "Unsupported file format. Supported: FLAC, WAV, AIFF, MP3")
 		return
 	}
 
+	// Validate file size
 	maxSize := int64(600 * 1024 * 1024) // 600MB
-
 	if request.FileSize <= 0 || request.FileSize > maxSize {
 		jsonResponse.ResponseBadRequest(c, "File size must be between 1 byte and 600MB")
 		return
 	}
 
+	// Generate upload session
 	uploadID := h.generateUploadID(request.ArtistID, request.Filename)
 	objectPath := h.storageService.GenerateUploadPath(request.ArtistID, request.Filename)
 
-	presignedURL, err := h.storageService.GetPresignedUploadURL(c.Request.Context(), objectPath, storage.BucketTypeTracks, 15*time.Minute)
+	// Get presigned upload URL
+	presignedURL, err := h.storageService.GetPresignedUploadURL(
+		c.Request.Context(), 
+		objectPath, 
+		storage.BucketTypeTracks, 
+		15*time.Minute,
+	)
 	if err != nil {
 		jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to generate presigned URL: %v", err))
 		return
 	}
 
+	// Create upload session
 	uploadSession := &model.UploadSession{
 		ID:         uploadID,
 		ArtistID:   request.ArtistID,
@@ -204,6 +226,7 @@ func (h *UploadHandler) CompleteUpload(c *gin.Context) {
 		return
 	}
 
+	// Verify upload session
 	uploadSession, err := h.musicService.GetUploadSession(c.Request.Context(), request.UploadID)
 	if h.HandleError(c, err) {
 		return
@@ -214,6 +237,7 @@ func (h *UploadHandler) CompleteUpload(c *gin.Context) {
 		return
 	}
 
+	// Verify file was uploaded correctly
 	objectPath := h.extractObjectPathFromURL(request.FileURL)
 	fileInfo, err := h.storageService.GetFileInfo(c.Request.Context(), storage.BucketTypeTracks, objectPath)
 	if err != nil {
@@ -226,19 +250,20 @@ func (h *UploadHandler) CompleteUpload(c *gin.Context) {
 		return
 	}
 
+	// Create song record
 	baseModelInstance, _ := baseModel.NewBaseModel(h.generator)
 	songData := &model.Song{
 		BaseModel:        *baseModelInstance,
-		ArtistID:         userID.(uint64),
+		ArtistID:         uploadSession.ArtistID,
 		Title:            request.Title,
 		Description:      request.Description,
 		GenreID:          request.GenreID,
 		MoodID:           request.MoodID,
 		FileURL:          request.FileURL,
 		FileSizeBytes:    &fileInfo.Size,
-		DurationSeconds:  nil,                              // Duration will be set later after processing
-		ArtworkURL:       "",                               // Artwork handling can be added later
-		Tier:             model.ContentTierPublicDiscovery, // Default tier, can be overridden later
+		DurationSeconds:  nil, // Will be set after processing
+		ArtworkURL:       "",  // Can be added later
+		Tier:             model.ContentTierPublicDiscovery,
 		IsProcessed:      false,
 		ProcessingStatus: model.ProcessingStatusPending,
 		ProcessingError:  "",
@@ -254,42 +279,85 @@ func (h *UploadHandler) CompleteUpload(c *gin.Context) {
 		return
 	}
 
-	// processingJob := &ProcessingJob{
-	// 	SongID:           songID,
-	// 	ArtistID:         userID.(uint64),
-	// 	SourceObjectPath: objectPath,
-	// }
+	// Prepare metadata for Celery task
+	metadata := queue.AudioProcessingMetadata{
+		OriginalFilename: uploadSession.Filename,
+		FileSize:         fileInfo.Size,
+		ContentType:      h.getContentTypeFromFilename(uploadSession.Filename),
+		UploadSessionID:  request.UploadID,
+		Title:            request.Title,
+		GenreID:          request.GenreID,
+		MoodID:           request.MoodID,
+		Description:      request.Description,
+		AdditionalData: map[string]string{
+			"user_agent": c.GetHeader("User-Agent"),
+			"client_ip":  c.ClientIP(),
+		},
+	}
 
-	// TODO: QUEUE PROCESSING JOB
-	// This is where you would enqueue the processing job to a message queue or worker system
-	// For now, we will just simulate it
-	processingJobID := fmt.Sprintf("processing_%d_%d", songID, time.Now().Unix())
-	fmt.Println("Enqueued processing job:", processingJobID)
+	// Create processing task
+	callbackURL := fmt.Sprintf("/api/v1/processing/callback/%d", songID)
+	processingTask := h.celeryClient.CreateProcessingTaskForSong(
+		songID,
+		uploadSession.ArtistID,
+		objectPath,
+		metadata,
+		callbackURL,
+	)
 
-	err = h.musicService.UpdateUploadSession(c.Request.Context(), request.UploadID, "completed")
-	if h.HandleError(c, err) {
+	// Apply custom processing config if provided
+	if request.ProcessingConfig != nil {
+		if request.ProcessingConfig.TargetLUFS != nil {
+			processingTask.ProcessingConfig.TargetLUFS = *request.ProcessingConfig.TargetLUFS
+		}
+		if len(request.ProcessingConfig.GenerateFormats) > 0 {
+			processingTask.ProcessingConfig.GenerateFormats = request.ProcessingConfig.GenerateFormats
+		}
+		if request.ProcessingConfig.QualityEnhancement != nil {
+			processingTask.ProcessingConfig.QualityEnhancement = *request.ProcessingConfig.QualityEnhancement
+		}
+		if request.ProcessingConfig.PreserveDynamicRange != nil {
+			processingTask.ProcessingConfig.PreserveDynamicRange = *request.ProcessingConfig.PreserveDynamicRange
+		}
+		if request.ProcessingConfig.ProcessingIntensity != "" {
+			processingTask.ProcessingConfig.ProcessingIntensity = request.ProcessingConfig.ProcessingIntensity
+		}
+	}
+
+	// Submit to Celery
+	taskID, err := h.celeryClient.SubmitAudioProcessingTask(c.Request.Context(), processingTask)
+	if err != nil {
+		jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to submit processing task: %v", err))
 		return
+	}
+
+	// Update upload session status
+	err = h.musicService.UpdateUploadSession(c.Request.Context(), request.UploadID, "completed")
+	if err != nil {
+		// Log error but don't fail the request
+		fmt.Printf("Failed to update upload session status: %v\n", err)
 	}
 
 	response := &CompleteUploadResponse{
 		SongID:              songID,
-		Status:              "completed",
-		Message:             "Upload completed successfully",
-		ProcessingJobID:     processingJobID,
-		EstimatedCompletion: time.Now().Add(30 * time.Minute), // Simulated estimated completion
+		Status:              "upload_completed",
+		Message:             "Upload completed successfully, processing started",
+		ProcessingTaskID:    taskID,
+		EstimatedCompletion: time.Now().Add(10 * time.Minute), // Estimated processing time
 		UploadSummary: &UploadSummary{
 			FileSize:   fileInfo.Size,
-			Format:     h.getFormatExtension("mp3_320"),
+			Format:     h.getFormatFromFilename(uploadSession.Filename),
 			UploadedAt: time.Now(),
 		},
 		NextSteps: []string{
-			"Share your song on social media",
-			"Add collaborators or credits",
-			"Set up monetization options",
-			"Submit to playlists or radio stations",
-			"Engage with your audience",
+			"Track is being processed for optimal quality",
+			"You'll receive a notification when processing is complete",
+			"Check processing status using the tracking URL",
+			"Share your music once processing is done",
 		},
+		TrackingURL: fmt.Sprintf("/api/v1/processing/status/%s", taskID),
 	}
+
 	jsonResponse.ResponseOK(c, response)
 }
 
@@ -314,6 +382,86 @@ func (h *UploadHandler) GetUploadStatus(c *gin.Context) {
 		"upload_id":  uploadSession.ID,
 		"status":     uploadSession.Status,
 		"expires_at": uploadSession.ExpiresAt,
+		"filename":   uploadSession.Filename,
+		"file_size":  uploadSession.FileSize,
+	}
+
+	jsonResponse.ResponseOK(c, response)
+}
+
+func (h *UploadHandler) GetProcessingStatus(c *gin.Context) {
+	taskID := c.Param("task_id")
+	if taskID == "" {
+		jsonResponse.ResponseBadRequest(c, "Task ID is required")
+		return
+	}
+
+	// Get task result from Celery
+	celeryResult, err := h.celeryClient.GetTaskResult(c.Request.Context(), taskID)
+	if err != nil {
+		jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to get task result: %v", err))
+		return
+	}
+
+	response := &ProcessingStatusResponse{
+		TaskID:    taskID,
+		Status:    celeryResult.Status,
+		CreatedAt: time.Now(), // You might want to store this in Redis when creating the task
+		UpdatedAt: time.Now(),
+	}
+
+	// Handle different status cases
+	switch celeryResult.Status {
+	case "PENDING":
+		response.Progress = &ProcessingProgress{
+			Stage:       "queued",
+			Percentage:  0.0,
+			CurrentStep: "Waiting in processing queue",
+		}
+
+	case "STARTED":
+		response.Progress = &ProcessingProgress{
+			Stage:       "processing",
+			Percentage:  25.0,
+			CurrentStep: "Audio processing in progress",
+			ETA:         timePtr(time.Now().Add(8 * time.Minute)),
+		}
+
+	case "SUCCESS":
+		// Parse the audio processing result
+		audioResult, err := h.celeryClient.GetAudioProcessingResult(c.Request.Context(), taskID)
+		if err != nil {
+			jsonResponse.ResponseInternalError(c, fmt.Errorf("failed to parse processing result: %v", err))
+			return
+		}
+		
+		response.Result = audioResult
+		response.Progress = &ProcessingProgress{
+			Stage:       "completed",
+			Percentage:  100.0,
+			CurrentStep: "Processing completed successfully",
+		}
+
+		// TODO: Update song record with processing results
+		// h.updateSongWithProcessingResults(audioResult)
+
+	case "FAILURE":
+		response.Error = "Processing failed"
+		if celeryResult.Traceback != "" {
+			response.Error = celeryResult.Traceback
+		}
+		response.Progress = &ProcessingProgress{
+			Stage:       "failed",
+			Percentage:  0.0,
+			CurrentStep: "Processing failed",
+		}
+
+	case "RETRY":
+		response.Progress = &ProcessingProgress{
+			Stage:       "retrying",
+			Percentage:  10.0,
+			CurrentStep: "Retrying processing due to temporary error",
+		}
 	}
 
 	jsonResponse.ResponseOK(c, response)
@@ -364,7 +512,34 @@ func (h *UploadHandler) GetStreamingURL(c *gin.Context) {
 	jsonResponse.ResponseOK(c, response)
 }
 
-// Helper function to validate audio file formats
+func (h *UploadHandler) ProcessingCallback(c *gin.Context) {
+	songID := c.Param("song_id")
+	if songID == "" {
+		jsonResponse.ResponseBadRequest(c, "Song ID is required")
+		return
+	}
+
+	var callbackData queue.AudioProcessingResult
+	if err := c.ShouldBindJSON(&callbackData); err != nil {
+		jsonResponse.ResponseBadRequest(c, "Invalid callback data: "+err.Error())
+		return
+	}
+
+	// TODO: Update song record with processing results
+	// This would include:
+	// - Update processing_status to "completed" or "failed"
+	// - Store audio analysis results
+	// - Update duration_seconds
+	// - Set is_processed = true
+	// - Store processed file URLs
+
+	fmt.Printf("Processing callback received for song %s: %+v\n", songID, callbackData)
+
+	jsonResponse.ResponseOK(c, map[string]string{"status": "callback_received"})
+}
+
+// Helper methods
+
 func (h *UploadHandler) canAccessFormat(userTier, format string) bool {
 	switch userTier {
 	case "free":
@@ -421,4 +596,40 @@ func (h *UploadHandler) getFormatExtension(format string) string {
 	default:
 		return "mp3"
 	}
+}
+
+func (h *UploadHandler) getFormatFromFilename(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".mp3":
+		return "MP3"
+	case ".flac":
+		return "FLAC"
+	case ".wav":
+		return "WAV"
+	case ".aiff":
+		return "AIFF"
+	default:
+		return "Unknown"
+	}
+}
+
+func (h *UploadHandler) getContentTypeFromFilename(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".mp3":
+		return "audio/mpeg"
+	case ".flac":
+		return "audio/flac"
+	case ".wav":
+		return "audio/wav"
+	case ".aiff":
+		return "audio/aiff"
+	default:
+		return "application/octet-stream"
+	}
+}
+
+func timePtr(t time.Time) *time.Time {
+	return &t
 }

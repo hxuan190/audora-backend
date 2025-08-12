@@ -17,6 +17,8 @@ import (
 	userModule "music-app-backend/internal/user"
 	ctx2 "music-app-backend/pkg/context"
 	"music-app-backend/pkg/database"
+	"music-app-backend/pkg/redis"
+	"music-app-backend/pkg/storage"
 
 	goflakeid "github.com/capy-engineer/go-flakeid"
 	"github.com/gin-gonic/gin"
@@ -48,12 +50,26 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
+	redisConfig := redis.NewConfig()
+	redisClient, err := redis.NewClient(redisConfig)
+	if err != nil {
+		log.Fatalf("Failed to initialize Redis: %v", err)
+	}
+	defer redisClient.Close()
+
+	// Initialize MinIO storage
+	minioConfig := storage.NewMinIOConfig()
+	storageService, err := storage.NewMinIOService(minioConfig)
+	if err != nil {
+		log.Fatalf("Failed to initialize MinIO storage: %v", err)
+	}
+
 	router := gin.Default()
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
 	// Init Service Context
-	serviceContext := ctx2.NewerviceContext(db.GetDB(), router, generator)
+	serviceContext := ctx2.NewServiceContext(db.GetDB(), router, generator, redisClient, storageService)
 
 	// Module registration
 	authModule := authModule.NewAuthModule(db.GetDB())
