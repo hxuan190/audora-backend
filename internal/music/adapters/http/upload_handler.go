@@ -184,7 +184,7 @@ func (h *UploadHandler) InitiateUpload(c *gin.Context) {
 		Instructions: &UploadInstructions{
 			Method:      presignedURL.Method,
 			Headers:     presignedURL.Headers,
-			CallbackURL: fmt.Sprintf("/api/v1/upload/complete"),
+			CallbackURL: "/api/v1/upload/complete",
 		},
 	}
 

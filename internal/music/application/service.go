@@ -1,7 +1,6 @@
 package application
 
 import (
-	"context"
 	"music-app-backend/internal/music/adapters/repository"
 	model "music-app-backend/internal/music/domain"
 	baseModel "music-app-backend/pkg/model"
@@ -11,8 +10,6 @@ import (
 
 type IMusicService interface {
 	InsertArtist(artist *model.CreateArtistDTO) error
-	CreateUploadSession(upload *model.UploadSession) error
-	CreateSong(ctx context.Context, song *model.Song) (uint64, error)
 }
 
 type MusicService struct {
