@@ -39,7 +39,7 @@ services:
     networks:
       - audora-network
 
-  # MinIO object storage
+  # MinIO object storage with enhanced configuration
   minio:
     image: minio/minio:latest
     container_name: audora-minio
@@ -67,7 +67,7 @@ services:
     networks:
       - audora-network
 
-  # MinIO setup service
+  # Enhanced MinIO setup service
   minio-setup:
     image: alpine:latest
     container_name: minio-setup
@@ -81,6 +81,23 @@ services:
       - ./scripts/setup-minio.sh:/setup-minio.sh
       - ./scripts/minio-policy.json:/minio-policy.json
     command: sh /setup-minio.sh
+    networks:
+      - audora-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: audora-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-audora-redis-pass}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - audora-network
 
@@ -99,7 +116,7 @@ services:
     networks:
       - audora-network
 
-  # Ory Kratos identity service (Enhanced but simple)
+  # Ory Kratos identity service
   kratos:
     image: oryd/kratos:latest
     container_name: audora-kratos
@@ -127,7 +144,7 @@ services:
       # Webhooks
       SELFSERVICE_FLOWS_AFTER_REGISTRATION_HOOK_URL: http://audora-api:8080/api/v1/internal/hooks/after-registration
       
-      # Secrets (Change these!)
+      # Secrets (Change these in production!)
       SECRETS_COOKIE: ${KRATOS_SECRET_COOKIE:-63f4945d921d599f27ae4fdf5bada3f1}
       SECRETS_CIPHER: ${KRATOS_SECRET_CIPHER:-cf62abb2197c0a173c9a76b88caaedc3}
       
@@ -149,11 +166,6 @@ services:
     volumes:
       - ./kratos:/etc/config/kratos
     command: serve --config /etc/config/kratos/kratos.yml --dev
-      # healthcheck:
-      #   test: ["CMD", "curl", "-f", "http://localhost:4433/health/ready"]
-      #   interval: 30s
-      #   timeout: 10s
-      #   retries: 3
     networks:
       - audora-network
 
@@ -166,10 +178,12 @@ services:
     depends_on:
       audora-db:
         condition: service_healthy
-      # kratos:
-      #   condition: service_healthy
       minio:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
     environment:
       # App
       APP_ENV: ${APP_ENV:-development}
@@ -182,11 +196,23 @@ services:
       AUDORA_DB_PASSWORD: ${AUDORA_DB_PASSWORD:-postgres}
       AUDORA_DB_NAME: ${AUDORA_DB_NAME:-audora}
       
-      # MinIO
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-audora-redis-pass}
+      
+      # MinIO Configuration
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET_NAME: audora
+      MINIO_TRACKS_BUCKET: audora-tracks
+      MINIO_PROCESSED_BUCKET: processed-tracks
+      MINIO_USE_SSL: false
+      
+      # Pipeline Service Account (for processing)
+      MINIO_PIPELINE_ACCESS_KEY: pipeline-user
+      MINIO_PIPELINE_SECRET_KEY: pipeline-secret-key
       
       # Kratos
       KRATOS_PUBLIC_URL: http://kratos:4433
@@ -195,10 +221,17 @@ services:
       # JWT for internal use
       JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-here}
       
+      # File Upload Settings
+      MAX_UPLOAD_SIZE: 600MB
+      ALLOWED_AUDIO_FORMATS: flac,wav,aiff,mp3
+      PROCESSING_TIMEOUT: 600s
+      
     ports:
       - "8080:8080"
     volumes:
       - .:/app
+      # Mount temporary processing directory
+      - processing_temp:/tmp/audora-processing
     networks:
       - audora-network
 
@@ -212,10 +245,37 @@ services:
     networks:
       - audora-network
 
+  # Optional: Prometheus for monitoring (uncomment if needed)
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: audora-prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #   networks:
+  #     - audora-network
+
+  # Optional: Grafana for dashboards (uncomment if needed)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: audora-grafana
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   networks:
+  #     - audora-network
+
 volumes:
   audora_data:
   kratos_data:
   minio_data:
+  redis_data:
+  processing_temp:
+  # grafana_data:  # Uncomment if using Grafana
 
 networks:
   audora-network:
