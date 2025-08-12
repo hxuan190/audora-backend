@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	BucketTypeTracks    = "tracks"
-	BucketTypeProcessed = "track-processed"
-	BucketTypeGeneral   = "general"
+	BucketTypeTracks    = "audora-tracks"
+	BucketTypeProcessed = "processed-tracks"
+	BucketTypeGeneral   = "audora"
 )
 
 type MinIOConfig struct {

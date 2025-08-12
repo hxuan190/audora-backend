@@ -54,7 +54,6 @@ type CompleteUploadRequest struct {
 	UploadID   string `json:"upload_id" binding:"required"`
 	FileURL    string `json:"file_url" binding:"required"`
 	ActualSize int64  `json:"actual_size" binding:"required"`
-	ETag       string `json:"etag"`
 
 	// Required song metadata
 	Title   string  `json:"title" binding:"required,min=1,max=200"`
