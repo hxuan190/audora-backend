@@ -57,7 +57,7 @@ services:
     volumes:
       - minio_data:/data
       # Mount additional MinIO configuration if needed
-      - ./minio-config:/etc/minio
+      # - ./minio-config:/etc/minio
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]

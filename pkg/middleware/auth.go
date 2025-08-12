@@ -3,8 +3,8 @@ package middleware
 
 import (
 	"music-app-backend/internal/auth/application"
-	"music-app-backend/pkg/jwt"
 	jsonResponse "music-app-backend/pkg/json"
+	"music-app-backend/pkg/jwt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -52,6 +52,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		c.Set("kratos_identity_id", claims.KratosIdentityID)
 		c.Set("user_type", claims.UserType)
 		c.Set("user_email", claims.Email)
+		c.Set("user_tier", "free") // Default to free tier, can be updated later
 
 		c.Next()
 	}

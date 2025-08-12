@@ -14,6 +14,12 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+const (
+	BucketTypeTracks    = "tracks"
+	BucketTypeProcessed = "track-processed"
+	BucketTypeGeneral   = "general"
+)
+
 type MinIOConfig struct {
 	Endpoint          string
 	AccessKey         string

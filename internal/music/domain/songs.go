@@ -31,8 +31,8 @@ type Song struct {
 	FileSizeBytes        *int64           `json:"file_size_bytes"`
 	DurationSeconds      *int             `json:"duration_seconds"`
 	ArtworkURL           string           `json:"artwork_url"`
-	GenreID              *int             `json:"genre_id"`
-	MoodID               *int             `json:"mood_id"`
+	GenreID              *uint64          `json:"genre_id"`
+	MoodID               *uint64          `json:"mood_id"`
 	Tier                 ContentTier      `json:"tier" gorm:"not null;default:'public_discovery'"`
 	AISuggestedTier      *ContentTier     `json:"ai_suggested_tier"`
 	TierOverrideByArtist bool             `json:"tier_override_by_artist" gorm:"default:false"`
